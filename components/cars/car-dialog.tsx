@@ -42,8 +42,12 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
     plateNumber: "",
     pricePerDay: 0,
     status: "available" as "available" | "maintenance" | "unavailable",
+    km: 0,                // NEW
+    servicing: "",        // NEW
+    nta: "",              // NEW
+    psv: "",              // NEW
     notes: "",
-    imageBase64: "" as string, // <-- new
+    imageBase64: "" as string,
   });
 
   useEffect(() => {
@@ -56,8 +60,12 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
         plateNumber: car.plateNumber,
         pricePerDay: car.pricePerDay,
         status: car.status,
+        km: car.km ?? 0,
+        servicing: car.servicing ?? "",
+        nta: car.nta ?? "",
+        psv: car.psv ?? "",
         notes: car.notes || "",
-        imageBase64: car.imageBase64 || "", // <-- new
+        imageBase64: car.imageBase64 || "",
       });
     } else {
       setFormData({
@@ -68,8 +76,12 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
         plateNumber: "",
         pricePerDay: 0,
         status: "available",
+        km: 0,
+        servicing: "",
+        nta: "",
+        psv: "",
         notes: "",
-        imageBase64: "", // <-- new
+        imageBase64: "",
       });
     }
   }, [car, open]);
@@ -77,14 +89,26 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const payload = {
+      ...formData,
+      year: Number(formData.year),
+      pricePerDay: Number(formData.pricePerDay),
+      km: Number(formData.km),
+      // servicing / nta / psv can stay as strings or be converted to null if empty
+      servicing: formData.servicing.trim() || null,
+      nta: formData.nta.trim() || null,
+      psv: formData.psv.trim() || null,
+      notes: formData.notes.trim() || null,
+    };
+
     if (car) {
-      await updateCar(car.id, formData); // includes imageBase64
+      await updateCar(car.id, payload);
       toast({
         title: "Car updated",
         description: `${formData.name} has been updated successfully.`,
       });
     } else {
-      await createCar(formData as any);
+      await createCar(payload as any);
       toast({
         title: "Car created",
         description: `${formData.name} has been added to the system.`,
@@ -116,7 +140,7 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="brand">Brand</Label>
+              <Label htmlFor="brand">Color</Label>
               <Input
                 id="brand"
                 value={formData.brand}
@@ -148,7 +172,7 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    year: Number.parseInt(e.target.value),
+                    year: Number.parseInt(e.target.value || "0", 10),
                   })
                 }
                 required
@@ -177,7 +201,24 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    pricePerDay: Number.parseFloat(e.target.value),
+                    pricePerDay: Number.parseFloat(e.target.value || "0"),
+                  })
+                }
+                required
+              />
+            </div>
+
+            {/* NEW FIELDS ROW 1 */}
+            <div className="space-y-2">
+              <Label htmlFor="km">KM</Label>
+              <Input
+                id="km"
+                type="number"
+                value={formData.km}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    km: Number.parseInt(e.target.value || "0", 10),
                   })
                 }
                 required
@@ -185,40 +226,46 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: any) =>
-                  setFormData({ ...formData, status: value })
+              <Label htmlFor="servicing">Servicing</Label>
+              <Input
+                id="servicing"
+                placeholder="e.g. Next service June 2026"
+                value={formData.servicing}
+                onChange={(e) =>
+                  setFormData({ ...formData, servicing: e.target.value })
                 }
-              >
-                <SelectTrigger id="status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="unavailable">Unavailable</SelectItem>
-                </SelectContent>
-              </Select>
+              />
+            </div>
+
+            {/* NEW FIELDS ROW 2 */}
+            <div className="space-y-2">
+              <Label htmlFor="nta">NTA/Insurance/Fitness</Label>
+              <Input
+                id="nta"
+                placeholder="NTA permit/expiry"
+                value={formData.nta}
+                onChange={(e) =>
+                  setFormData({ ...formData, nta: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="psv">PSV</Label>
+              <Input
+                id="psv"
+                placeholder="PSV permit/expiry"
+                value={formData.psv}
+                onChange={(e) =>
+                  setFormData({ ...formData, psv: e.target.value })
+                }
+              />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              rows={3}
-            />
-          </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="image">Car Image</Label>
             <div className="flex items-center gap-4">
-              {/* preview */}
               {formData.imageBase64 ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -243,6 +290,7 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onClose()}>
               Cancel

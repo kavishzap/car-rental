@@ -61,8 +61,6 @@ export default function CarsPage() {
   }
 
   const handleDeleteCar = async (car: Car) => {
-    const ok = confirm(`Are you sure you want to delete ${car.name}?`)
-    if (!ok) return
     try {
       await deleteCar(car.id)
       toast({

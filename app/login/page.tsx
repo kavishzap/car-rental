@@ -62,7 +62,7 @@ export default function LoginPage() {
             <div className="flex justify-center">
               <div className="h-24 w-24 rounded-lg flex items-center justify-center">
                 <Image
-                  src="/car.png"
+                  src="/Logo Paint retouched and resized.JPG"
                   alt="Logo"
                   width={100}
                   height={100}
@@ -71,7 +71,7 @@ export default function LoginPage() {
               </div>
             </div>
             <div>
-              <CardTitle className="text-2xl">Car Rental Back Office</CardTitle>
+              <CardTitle className="text-2xl">Claire Sailesh Car Rental Back Office</CardTitle>
               <CardDescription>Sign in to manage your business</CardDescription>
             </div>
           </CardHeader>

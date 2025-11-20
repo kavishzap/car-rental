@@ -1,9 +1,19 @@
-export function generateContractNumber() {
-  // CTR-YYYYMMDD-XXXX (random suffix)
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `CTR-${y}${m}${day}-${rand}`;
+import { supabase } from "@/lib/supabase";
+
+export async function generateContractNumber() {
+  const { data } = await supabase
+    .from("contracts")
+    .select("contract_number")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let last = 0;
+
+  if (data?.contract_number) {
+    const parsed = parseInt(data.contract_number, 10);
+    if (!Number.isNaN(parsed)) last = parsed;
+  }
+
+  return (last + 1).toString().padStart(6, "0");
 }

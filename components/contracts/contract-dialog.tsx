@@ -1,3 +1,4 @@
+// src/components/contracts/contract-dialog.tsx
 "use client";
 
 import type React from "react";
@@ -20,22 +21,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  createContract,
-  updateContract,
-  calculateContractTotal,
-} from "@/lib/services/contracts";
+import { createContract, updateContract } from "@/lib/services/contracts";
+import { calculateContractTotal } from "@/lib/utils/contract-calculation";
 import { getCustomers } from "@/lib/services/customers";
 import { getCars } from "@/lib/services/cars";
 import type { Contract } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils/format";
-import { generateContractNumber } from "@/lib/utils/contracts";
+
+// 🆕 for calendar UI + utils
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+
+// 🆕 booked dates service
+import { getCarBookedDateRanges } from "@/lib/services/contractAvailability";
 
 type ContractDialogProps = {
   open: boolean;
   contract: Contract | null;
   onClose: (shouldRefresh?: boolean) => void;
+};
+
+const isSameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+/**
+ * Parse "YYYY-MM-DD" into Date at local midnight.
+ */
+const parseDateOnly = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
 };
 
 export function ContractDialog({
@@ -53,6 +77,11 @@ export function ContractDialog({
   >([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // 🆕 disabled dates for the selected car (create mode only)
+  const [bookedRanges, setBookedRanges] = useState<
+    { start: string; end: string }[]
+  >([]);
+
   const [formData, setFormData] = useState({
     customerId: "",
     carId: "",
@@ -61,21 +90,35 @@ export function ContractDialog({
     dailyRate: 0,
     days: 0,
     subtotal: 0,
-    discount: 0,
     taxRate: 0,
     total: 0,
-    status: "draft" as
-      | "draft"
-      | "active"
-      | "completed"
-      | "cancelled"
-      | "overdue",
+    status: "draft" as "draft" | "completed" | "cancelled",
     notes: "",
     licenseNumber: "",
     clientSignatureBase64: "",
-    ownerSignatureBase64: "",
+
+    siegeBBAmount: 0,
+    rehausseurAmount: 0,
+    fuelAmount: 0,
+    preAuthorization: "",
+    pickupDate: "",
+    pickupTime: "",
+    deliveryDate: "",
+    deliveryTime: "",
+    paymentMode: "",
+    simAmount: 0,
+    deliveryAmount: 0,
+    cardPaymentPercent: 0,
+    cardPaymentAmount: 0,
+    secondDriverName: "",
+    secondDriverLicense: "",
   });
 
+  const isEditMode = !!contract;
+  const rangesOverlap = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) =>
+    aStart <= bEnd && bStart <= aEnd;
+
+  // Load customers + cars when dialog opens
   useEffect(() => {
     if (!open) return;
     (async () => {
@@ -107,6 +150,7 @@ export function ContractDialog({
     })();
   }, [open, toast]);
 
+  // Prefill on edit / reset on create
   useEffect(() => {
     if (contract) {
       setFormData({
@@ -117,15 +161,37 @@ export function ContractDialog({
         dailyRate: contract.dailyRate,
         days: contract.days,
         subtotal: contract.subtotal,
-        discount: contract.discount || 0,
         taxRate: contract.taxRate || 0,
         total: contract.total,
         status: contract.status,
         notes: contract.notes || "",
         licenseNumber: contract.licenseNumber || "",
         clientSignatureBase64: contract.clientSignatureBase64 || "",
-        ownerSignatureBase64: contract.ownerSignatureBase64 || "",
+
+        fuelAmount: (contract as any).fuelAmount ?? 0,
+        preAuthorization: (contract as any).preAuthorization ?? "",
+        pickupDate: (contract as any).pickupDate
+          ? (contract as any).pickupDate.split("T")[0]
+          : "",
+        pickupTime: (contract as any).pickupTime ?? "",
+        deliveryDate: (contract as any).deliveryDate
+          ? (contract as any).deliveryDate.split("T")[0]
+          : "",
+        deliveryTime: (contract as any).deliveryTime ?? "",
+        paymentMode: (contract as any).paymentMode ?? "",
+
+        siegeBBAmount: (contract as any).siegeBBAmount ?? 0,
+        rehausseurAmount: (contract as any).rehausseurAmount ?? 0,
+        simAmount: (contract as any).simAmount ?? 0,
+        deliveryAmount: (contract as any).deliveryAmount ?? 0,
+        cardPaymentPercent: (contract as any).cardPaymentPercent ?? 0,
+        cardPaymentAmount: (contract as any).cardPaymentAmount ?? 0,
+
+        secondDriverName: (contract as any).secondDriverName ?? "",
+        secondDriverLicense: (contract as any).secondDriverLicense ?? "",
       });
+      // In edit mode, we don't enforce disabling existing dates
+      setBookedRanges([]);
     } else {
       setFormData({
         customerId: "",
@@ -135,18 +201,60 @@ export function ContractDialog({
         dailyRate: 0,
         days: 0,
         subtotal: 0,
-        discount: 0,
         taxRate: 0,
         total: 0,
         status: "draft",
         notes: "",
         licenseNumber: "",
         clientSignatureBase64: "",
-        ownerSignatureBase64: "",
+        fuelAmount: 0,
+        preAuthorization: "",
+        pickupDate: "",
+        pickupTime: "",
+        deliveryDate: "",
+        deliveryTime: "",
+        paymentMode: "",
+        siegeBBAmount: 0,
+        rehausseurAmount: 0,
+        simAmount: 0,
+        deliveryAmount: 0,
+        cardPaymentPercent: 0,
+        cardPaymentAmount: 0,
+        secondDriverName: "",
+        secondDriverLicense: "",
       });
+      setBookedRanges([]);
     }
   }, [contract, open]);
 
+  // 🆕 Load booked dates when creating a new contract & car changes
+  // 🆕 Load booked dates when creating a new contract & car changes
+  useEffect(() => {
+    if (!open) return;
+    if (isEditMode) return; // only create mode
+    if (!formData.carId) {
+      setBookedRanges([]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const ranges = await getCarBookedDateRanges(formData.carId);
+        // expected: [{ start: "2025-11-20", end: "2025-11-23" }, ...]
+        setBookedRanges(ranges);
+      } catch (err: any) {
+        console.error("Failed to load booked dates:", err);
+        toast({
+          title: "Could not load availability",
+          description: err?.message ?? "Dates may not be correctly disabled.",
+          variant: "destructive",
+        });
+        setBookedRanges([]);
+      }
+    })();
+  }, [open, formData.carId, isEditMode, toast]);
+
+  // Auto-calc days from start/end
   useEffect(() => {
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
@@ -159,25 +267,78 @@ export function ContractDialog({
     }
   }, [formData.startDate, formData.endDate]);
 
+  // Recalculate totals when rate/days/tax or extra charges change
   useEffect(() => {
-    const { dailyRate, days } = formData;
+    const {
+      dailyRate,
+      days,
+      taxRate,
+      simAmount,
+      deliveryAmount,
+      cardPaymentPercent,
+      siegeBBAmount,
+      rehausseurAmount,
+    } = formData;
+
     const valid =
       Number.isFinite(dailyRate) &&
       dailyRate > 0 &&
       Number.isFinite(days) &&
       days > 0;
+
     if (valid) {
-      const { subtotal, total } = calculateContractTotal(
-        formData.dailyRate,
-        formData.days,
-        formData.discount,
-        formData.taxRate
+      const { subtotal, total: baseTotal } = calculateContractTotal(
+        dailyRate,
+        days,
+        0,
+        taxRate
       );
-      setFormData((prev) => ({ ...prev, subtotal, total }));
+
+      const safeSim = Number.isFinite(simAmount) ? simAmount : 0;
+      const safeDelivery = Number.isFinite(deliveryAmount) ? deliveryAmount : 0;
+      const safeSiege = Number.isFinite(siegeBBAmount) ? siegeBBAmount : 0;
+      const safeRehausseur = Number.isFinite(rehausseurAmount)
+        ? rehausseurAmount
+        : 0;
+      const safePercent = Number.isFinite(cardPaymentPercent)
+        ? cardPaymentPercent
+        : 0;
+
+      const cardPaymentAmount =
+        safePercent > 0 ? (baseTotal * safePercent) / 100 : 0;
+
+      const finalTotal =
+        baseTotal +
+        safeSim +
+        safeDelivery +
+        safeSiege +
+        safeRehausseur +
+        cardPaymentAmount;
+
+      setFormData((prev) => ({
+        ...prev,
+        subtotal,
+        cardPaymentAmount,
+        total: finalTotal,
+      }));
     } else {
-      setFormData((prev) => ({ ...prev, subtotal: 0, total: 0 }));
+      setFormData((prev) => ({
+        ...prev,
+        subtotal: 0,
+        cardPaymentAmount: 0,
+        total: 0,
+      }));
     }
-  }, [formData.dailyRate, formData.days, formData.discount, formData.taxRate]);
+  }, [
+    formData.dailyRate,
+    formData.days,
+    formData.taxRate,
+    formData.simAmount,
+    formData.deliveryAmount,
+    formData.cardPaymentPercent,
+    formData.siegeBBAmount,
+    formData.rehausseurAmount,
+  ]);
 
   const handleCarChange = (carId: string) => {
     const selectedCar = cars.find((c) => c.id === carId);
@@ -186,10 +347,12 @@ export function ContractDialog({
       carId,
       dailyRate: selectedCar ? selectedCar.pricePerDay : 0,
     }));
+    // bookedDates will be loaded by the effect that watches formData.carId
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formData.customerId || !formData.carId) {
       toast({
         title: "Error",
@@ -198,6 +361,36 @@ export function ContractDialog({
       });
       return;
     }
+    if (!isEditMode && formData.startDate && formData.endDate) {
+      const newStart = parseDateOnly(formData.startDate);
+      const newEnd = parseDateOnly(formData.endDate);
+
+      const conflict = bookedRanges.some((r) => {
+        const bStart = parseDateOnly(r.start);
+        const bEnd = parseDateOnly(r.end);
+        return rangesOverlap(newStart, newEnd, bStart, bEnd);
+      });
+
+      if (conflict) {
+        toast({
+          title: "Date conflict",
+          description:
+            "This car is already booked during the selected dates. Please choose a different period.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    if (!formData.paymentMode) {
+      toast({
+        title: "Payment mode required",
+        description: "Please select a payment mode before saving the contract.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setSubmitting(true);
 
@@ -209,14 +402,33 @@ export function ContractDialog({
         dailyRate: formData.dailyRate,
         days: formData.days,
         subtotal: formData.subtotal,
-        discount: formData.discount,
+        discount: 0,
         taxRate: formData.taxRate,
         total: formData.total,
         status: formData.status,
         notes: formData.notes,
         licenseNumber: formData.licenseNumber,
         clientSignatureBase64: formData.clientSignatureBase64 || undefined,
-        ownerSignatureBase64: formData.ownerSignatureBase64 || undefined,
+
+        fuelAmount: formData.fuelAmount || 0,
+        preAuthorization: formData.preAuthorization || "",
+        pickupDate: formData.pickupDate
+          ? new Date(formData.pickupDate).toISOString()
+          : null,
+        pickupTime: formData.pickupTime || "",
+        deliveryDate: formData.deliveryDate
+          ? new Date(formData.deliveryDate).toISOString()
+          : null,
+        deliveryTime: formData.deliveryTime || "",
+        paymentMode: formData.paymentMode || "",
+        siegeBBAmount: formData.siegeBBAmount || 0,
+        rehausseurAmount: formData.rehausseurAmount || 0,
+        simAmount: formData.simAmount || 0,
+        deliveryAmount: formData.deliveryAmount || 0,
+        cardPaymentPercent: formData.cardPaymentPercent || 0,
+        cardPaymentAmount: formData.cardPaymentAmount || 0,
+        secondDriverName: formData.secondDriverName || "",
+        secondDriverLicense: formData.secondDriverLicense || "",
       };
 
       if (contract) {
@@ -229,8 +441,7 @@ export function ContractDialog({
           description: `Contract ${contract.contractNumber} updated.`,
         });
       } else {
-        const contractNumber = generateContractNumber();
-        await createContract({ contractNumber, ...base });
+        await createContract(base);
         toast({
           title: "Contract created",
           description: "A new contract has been created successfully.",
@@ -249,9 +460,13 @@ export function ContractDialog({
     }
   };
 
+  const disabledIntervals = bookedRanges.map((r) => ({
+    from: parseDateOnly(r.start),
+    to: parseDateOnly(r.end),
+  }));
+
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      {/* Wider dialog for desktop, no forced vertical scroll */}
       <DialogContent className="max-h-[85vh] w-[70vw] max-w-2xl xl:max-w-5xl overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
@@ -263,7 +478,7 @@ export function ContractDialog({
           onSubmit={handleSubmit}
           className="flex flex-col gap-6 overflow-y-auto max-h-[70vh] pr-2"
         >
-          {/* 3 columns on XL for minimal scrolling */}
+          {/* Main contract info */}
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="customerId">Customer</Label>
@@ -302,7 +517,7 @@ export function ContractDialog({
               </Select>
             </div>
 
-            {/* Status dropdown (added back) */}
+            {/* Status */}
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select
@@ -316,37 +531,116 @@ export function ContractDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
+            {/* 🆕 Start Date (calendar with disabled booked dates) */}
+            {/* Start Date */}
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
+              <Label>Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.startDate ? (
+                      format(parseDateOnly(formData.startDate), "PPP")
+                    ) : (
+                      <span>Pick a start date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      formData.startDate
+                        ? parseDateOnly(formData.startDate)
+                        : undefined
+                    }
+                    onSelect={(date) => {
+                      if (!date) return;
+                      // store as local date string, NOT ISO
+                      const value = format(date, "yyyy-MM-dd");
+                      setFormData((prev) => ({ ...prev, startDate: value }));
+                    }}
+                    disabled={disabledIntervals}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* 🆕 End Date (calendar with disabled booked dates) */}
+            {/* End Date */}
+            <div className="space-y-2">
+              <Label>End Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.endDate ? (
+                      format(parseDateOnly(formData.endDate), "PPP")
+                    ) : (
+                      <span>Pick an end date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      formData.endDate
+                        ? parseDateOnly(formData.endDate)
+                        : undefined
+                    }
+                    onSelect={(date) => {
+                      if (!date) return;
+                      const value = format(date, "yyyy-MM-dd");
+                      setFormData((prev) => ({ ...prev, endDate: value }));
+                    }}
+                    disabled={disabledIntervals}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pickupTime">Pickup Time</Label>
               <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate}
+                id="pickupTime"
+                type="time"
+                value={formData.pickupTime}
                 onChange={(e) =>
-                  setFormData({ ...formData, startDate: e.target.value })
+                  setFormData({ ...formData, pickupTime: e.target.value })
                 }
-                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
+              <Label htmlFor="deliveryTime">Delivery Time</Label>
               <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate}
+                id="deliveryTime"
+                type="time"
+                value={formData.deliveryTime}
                 onChange={(e) =>
-                  setFormData({ ...formData, endDate: e.target.value })
+                  setFormData({ ...formData, deliveryTime: e.target.value })
                 }
-                required
               />
             </div>
 
@@ -373,23 +667,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="discount">Discount</Label>
-              <Input
-                id="discount"
-                type="number"
-                step="0.01"
-                value={formData.discount}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    discount: Number.parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="subtotal">Subtotal</Label>
+              <Label htmlFor="subtotal">Subtotal (before extras)</Label>
               <Input
                 id="subtotal"
                 value={formatCurrency(formData.subtotal)}
@@ -398,15 +676,6 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="total">Total</Label>
-              <Input
-                id="total"
-                value={formatCurrency(formData.total)}
-                disabled
-              />
-            </div>
-
-            <div className="space-y-2 xl:col-span-3">
               <Label htmlFor="licenseNumber">License Number</Label>
               <Input
                 id="licenseNumber"
@@ -417,12 +686,207 @@ export function ContractDialog({
                 }
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fuelAmount">Fuel Amount (bars)</Label>
+              <Select
+                value={formData.fuelAmount ? String(formData.fuelAmount) : ""}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    fuelAmount: Number.parseInt(value, 10) || 0,
+                  })
+                }
+              >
+                <SelectTrigger id="fuelAmount">
+                  <SelectValue placeholder="Select fuel amount" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }).map((_, idx) => {
+                    const v = idx + 1;
+                    return (
+                      <SelectItem key={v} value={String(v)}>
+                        {v}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preAuthorization">Pre-authorization</Label>
+              <Input
+                id="preAuthorization"
+                placeholder="Reference / note"
+                value={formData.preAuthorization}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    preAuthorization: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="simAmount">SIM (amount)</Label>
+              <Input
+                id="simAmount"
+                type="number"
+                step="0.01"
+                value={formData.simAmount}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    simAmount: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deliveryAmount">Delivery (amount)</Label>
+              <Input
+                id="deliveryAmount"
+                type="number"
+                step="0.01"
+                value={formData.deliveryAmount}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    deliveryAmount: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="siegeBBAmount">Siège BB (amount)</Label>
+              <Input
+                id="siegeBBAmount"
+                type="number"
+                step="0.01"
+                value={formData.siegeBBAmount}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    siegeBBAmount: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rehausseurAmount">Rehausseur (amount)</Label>
+              <Input
+                id="rehausseurAmount"
+                type="number"
+                step="0.01"
+                value={formData.rehausseurAmount}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    rehausseurAmount: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cardPaymentPercent">Card payment %</Label>
+              <Input
+                id="cardPaymentPercent"
+                type="number"
+                step="0.01"
+                value={formData.cardPaymentPercent}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    cardPaymentPercent: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
+              />
+              {formData.cardPaymentAmount > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Card fee: {formatCurrency(formData.cardPaymentAmount)}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="secondDriverName">Second driver name</Label>
+              <Input
+                id="secondDriverName"
+                value={formData.secondDriverName}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    secondDriverName: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="secondDriverLicense">Second driver license</Label>
+              <Input
+                id="secondDriverLicense"
+                value={formData.secondDriverLicense}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    secondDriverLicense: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paymentMode">Payment Mode</Label>
+              <Select
+                value={formData.paymentMode}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, paymentMode: value })
+                }
+              >
+                <SelectTrigger id="paymentMode">
+                  <SelectValue placeholder="Select payment mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Signatures (read-only) */}
-          <div className="space-y-3">
-            <div className="text-sm font-medium">Signatures (read-only)</div>
-            <div className="grid gap-6 md:grid-cols-2">
+          {/* Payment + extras */}
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-2 max-w-xs">
+              <Label htmlFor="total">Total (incl. extras)</Label>
+              <Input
+                id="total"
+                value={formatCurrency(formData.total)}
+                disabled
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-3">
               <div className="space-y-2">
                 <Label>Client Signature</Label>
                 {formData.clientSignatureBase64 ? (
@@ -438,35 +902,7 @@ export function ContractDialog({
                   </div>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <Label>Owner Signature</Label>
-                {formData.ownerSignatureBase64 ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={formData.ownerSignatureBase64}
-                    alt="Owner signature"
-                    className="h-28 w-full max-w-sm rounded border bg-white object-contain p-2"
-                  />
-                ) : (
-                  <div className="h-28 w-full max-w-sm rounded border bg-muted/30 flex items-center justify-center text-xs text-muted-foreground">
-                    No signature
-                  </div>
-                )}
-              </div>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              rows={4}
-            />
           </div>
 
           <DialogFooter>

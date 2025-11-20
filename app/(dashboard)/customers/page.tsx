@@ -62,8 +62,6 @@ export default function CustomersPage() {
   }
 
   const handleDeleteCustomer = async (customer: Customer) => {
-    const ok = confirm(`Are you sure you want to delete ${customer.firstName} ${customer.lastName}?`)
-    if (!ok) return
     try {
       await deleteCustomer(customer.id)
       toast({

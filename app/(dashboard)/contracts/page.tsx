@@ -55,8 +55,6 @@ export default function ContractsPage() {
   }
 
   const handleDeleteContract = async (contract: Contract) => {
-    const ok = confirm(`Are you sure you want to delete contract ${contract.contractNumber}?`)
-    if (!ok) return
     try {
       await deleteContract(contract.id) // ⬅️ await deletion
       toast({

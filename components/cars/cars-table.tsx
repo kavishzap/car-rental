@@ -128,7 +128,7 @@ export function CarsTable({ cars, onEdit, onDelete }: CarsTableProps) {
           <TableRow>
             <TableHead>Photo</TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>Brand</TableHead>
+            <TableHead>Color</TableHead>
             <TableHead>Model</TableHead>
             <TableHead>Year</TableHead>
             <TableHead>Plate Number</TableHead>

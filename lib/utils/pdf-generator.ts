@@ -1,263 +1,449 @@
-import jsPDF from "jspdf"
-import type { Contract, Customer, Car } from "@/lib/types"
-import { formatCurrency, formatDate } from "@/lib/utils/format"
+// src/lib/utils/pdf-generator.ts
+import { jsPDF } from "jspdf";
+import type { Contract } from "@/lib/types";
 
-export function generateContractPDF(
-  contract: Contract,
-  customer: Customer,
-  car: Car,
-  companyInfo?: {
-    name: string
-    address: string
-    phone: string
-    email: string
-  },
-) {
-  const doc = new jsPDF()
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const pageHeight = doc.internal.pageSize.getHeight()
-  let yPosition = 20
+type CompanyDetails = {
+  id: string;
+  name: string;
+  email: string;
+  brn: string;
+  whatsapp_num: string;
+  tel: string;
+  terms: string;
+  logo?: string | null; // base64 data URL
+};
 
-  // Company Header
-  const company = companyInfo || {
-    name: "Car Rental Company",
-    address: "123 Main Street, City, Country",
-    phone: "+1 234 567 8900",
-    email: "info@carrental.com",
+type Customer = {
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+};
+
+type Car = {
+  name: string;
+  registrationNumber?: string | null;
+  plateNumber?: string | null;
+  brand?: string | null;
+  model?: string | null;
+};
+
+type BuildContractHtmlArgs = {
+  contract: Contract;
+  customer: Customer;
+  car: Car;
+  company: CompanyDetails;
+};
+
+export async function buildContractHtml({
+  contract,
+  customer,
+  car,
+  company,
+}: BuildContractHtmlArgs) {
+  const doc = new jsPDF("p", "pt", "a4");
+
+  // --- Layout constants
+  const PAGE_WIDTH = doc.internal.pageSize.getWidth();
+  const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+  const MARGIN_LEFT = 40;
+  const MARGIN_RIGHT = 40;
+  const TOP_MARGIN = 40;
+  const BOTTOM_MARGIN = 40;
+  const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
+
+  const COLUMN_GUTTER = 40;
+  const COLUMN_WIDTH = (CONTENT_WIDTH - COLUMN_GUTTER) / 2;
+
+  let y = TOP_MARGIN;
+
+  const formatMoney = (v: number | null | undefined) =>
+    (v ?? 0).toFixed(2) + " MUR";
+
+  const fullCustomerName = `${customer.firstName ?? ""} ${
+    customer.lastName ?? ""
+  }`.trim();
+
+  const chargesRowsLeft = [
+    { label: "Daily rate", value: formatMoney(contract.dailyRate) },
+    {
+      label: "Days / Subtotal (rental)",
+      value: `${contract.days}  Subtotal: ${formatMoney(contract.subtotal)}`,
+    },
+  ];
+
+  const chargesRowsRight = [
+    { label: "SIM", value: formatMoney(contract.simAmount ?? 0) },
+    { label: "Delivery", value: formatMoney(contract.deliveryAmount ?? 0) },
+    { label: "Siège BB", value: formatMoney(contract.siegeBBAmount ?? 0) },
+    {
+      label: "Rehausseur",
+      value: formatMoney(contract.rehausseurAmount ?? 0),
+    },
+    {
+      label: `Card fee (${contract.cardPaymentPercent ?? 0}%)`,
+      value: formatMoney(contract.cardPaymentAmount ?? 0),
+    },
+    { label: "Tax rate", value: `${contract.taxRate ?? 0}%` },
+    { label: "Total", value: formatMoney(contract.total) },
+  ];
+
+  const notesSnippet = contract.notes
+    ? contract.notes.replace(/\s+/g, " ").slice(0, 80) +
+      (contract.notes.replace(/\s+/g, " ").length > 80 ? "…" : "")
+    : "-";
+  // ---------- COMPANY HEADER ----------
+  const headerTopY = y;
+
+  // Logo
+  if (company.logo) {
+    try {
+      const isPng = company.logo.startsWith("data:image/png");
+      const imgType = isPng ? "PNG" : "JPEG";
+      doc.addImage(company.logo, imgType, MARGIN_LEFT, headerTopY, 80, 80);
+    } catch {
+      // ignore logo errors
+    }
   }
 
-  doc.setFontSize(20)
-  doc.setFont("helvetica", "bold")
-  doc.text(company.name, pageWidth / 2, yPosition, { align: "center" })
+  // COMPANY NAME (bold)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text(company.name, MARGIN_LEFT + 100, headerTopY + 20);
 
-  yPosition += 8
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "normal")
-  doc.text(company.address, pageWidth / 2, yPosition, { align: "center" })
+  // Switch to normal font for details
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
 
-  yPosition += 5
-  doc.text(`${company.phone} | ${company.email}`, pageWidth / 2, yPosition, { align: "center" })
+  // Start BELOW the company name (no overlap)
+  let infoY = headerTopY + 40;
 
-  // Title
-  yPosition += 15
-  doc.setFontSize(16)
-  doc.setFont("helvetica", "bold")
-  doc.text("RENTAL CONTRACT", pageWidth / 2, yPosition, { align: "center" })
+  // Owner Name
+  doc.text("Jaynandrasing Ramchurn", MARGIN_LEFT + 100, infoY);
 
-  // Contract Number and Date
-  yPosition += 10
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "normal")
-  doc.text(`Contract #: ${contract.contractNumber}`, 20, yPosition)
-  doc.text(`Date: ${formatDate(contract.createdAt)}`, pageWidth - 20, yPosition, { align: "right" })
+  // BRN
+  infoY += 14;
+  doc.text(`BRN: ${company.brn}`, MARGIN_LEFT + 100, infoY);
 
-  // Divider line
-  yPosition += 5
-  doc.setDrawColor(200, 200, 200)
-  doc.line(20, yPosition, pageWidth - 20, yPosition)
+  // Tel
+  infoY += 14;
+  doc.text(`Tel: ${company.tel}`, MARGIN_LEFT + 100, infoY);
 
-  // Customer Information Section
-  yPosition += 10
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("CUSTOMER INFORMATION", 20, yPosition)
+  // WhatsApp
+  infoY += 14;
+  doc.text(`WhatsApp: ${company.whatsapp_num}`, MARGIN_LEFT + 100, infoY);
 
-  yPosition += 8
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "normal")
-  doc.text(`Name: ${customer.firstName} ${customer.lastName}`, 20, yPosition)
+  // Email
+  infoY += 14;
+  doc.text(`Email: ${company.email}`, MARGIN_LEFT + 100, infoY);
 
-  yPosition += 6
-  doc.text(`Email: ${customer.email}`, 20, yPosition)
+  // contract meta box on the right
+  const metaBoxWidth = 180;
+  const metaBoxX = PAGE_WIDTH - MARGIN_RIGHT - metaBoxWidth;
+  const metaBoxY = headerTopY;
+  const metaBoxHeight = 70;
 
-  yPosition += 6
-  doc.text(`Phone: ${customer.phone}`, 20, yPosition)
+  doc.setDrawColor(200);
+  doc.setFillColor(245, 245, 245);
+  doc.roundedRect(metaBoxX, metaBoxY, metaBoxWidth, metaBoxHeight, 4, 4, "FD");
 
-  yPosition += 6
-  doc.text(`ID/Passport: ${customer.nicOrPassport}`, 20, yPosition)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Contract Info", metaBoxX + 10, metaBoxY + 16);
 
-  if (customer.address) {
-    yPosition += 6
-    doc.text(`Address: ${customer.address}`, 20, yPosition)
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(
+    `No: ${contract.contractNumber || contract.id}`,
+    metaBoxX + 10,
+    metaBoxY + 32
+  );
+  doc.text(
+    `Status: ${contract.status.toUpperCase()}`,
+    metaBoxX + 10,
+    metaBoxY + 46
+  );
+  doc.text(
+    `Created: ${contract.createdAt?.slice(0, 10) ?? "-"}`,
+    metaBoxX + 10,
+    metaBoxY + 60
+  );
+
+  // Figure out the true bottom of the header (logo / info / meta box)
+  const logoBottom = headerTopY + 80; // logo height
+  const infoBottom = infoY; // last info line
+  const metaBottom = metaBoxY + metaBoxHeight;
+
+  const headerBottom = Math.max(logoBottom, infoBottom, metaBottom);
+
+  // separator line under FULL header
+  y = headerBottom + 20;
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(210);
+  doc.line(MARGIN_LEFT, y, PAGE_WIDTH - MARGIN_RIGHT, y);
+
+  // ---------- TITLE ----------
+  y += 24;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  const title = "RENTAL CONTRACT";
+  const titleWidth = doc.getTextWidth(title);
+  doc.text(title, MARGIN_LEFT + CONTENT_WIDTH / 2 - titleWidth / 2, y);
+
+  // Columns X positions
+  const col1X = MARGIN_LEFT;
+  const col2X = MARGIN_LEFT + COLUMN_WIDTH + COLUMN_GUTTER;
+
+  // ---------- CUSTOMER + LICENSE / SECOND DRIVER (2 COL) ----------
+  y += 24;
+  let leftY = y;
+  let rightY = y;
+
+  // Left: Customer Details
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Customer Details", col1X, leftY);
+  leftY += 14;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`Name: ${fullCustomerName}`, col1X, leftY);
+  leftY += 12;
+
+  if (customer.email) {
+    doc.text(`Email: ${customer.email}`, col1X, leftY);
+    leftY += 12;
   }
 
-  // Vehicle Information Section
-  yPosition += 12
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("VEHICLE INFORMATION", 20, yPosition)
-
-  yPosition += 8
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "normal")
-  doc.text(`Vehicle: ${car.name}`, 20, yPosition)
-
-  yPosition += 6
-  doc.text(`Brand: ${car.brand}`, 20, yPosition)
-
-  yPosition += 6
-  doc.text(`Model: ${car.model}`, 20, yPosition)
-
-  yPosition += 6
-  doc.text(`Year: ${car.year}`, 20, yPosition)
-
-  yPosition += 6
-  doc.text(`Plate Number: ${car.plateNumber}`, 20, yPosition)
-
-  // Rental Period Section
-  yPosition += 12
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("RENTAL PERIOD", 20, yPosition)
-
-  yPosition += 8
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "normal")
-  doc.text(`Start Date: ${formatDate(contract.startDate)}`, 20, yPosition)
-
-  yPosition += 6
-  doc.text(`End Date: ${formatDate(contract.endDate)}`, 20, yPosition)
-
-  yPosition += 6
-  doc.text(`Duration: ${contract.days} day${contract.days > 1 ? "s" : ""}`, 20, yPosition)
-
-  // Pricing Section
-  yPosition += 12
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("PRICING DETAILS", 20, yPosition)
-
-  yPosition += 8
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "normal")
-
-  // Create pricing table
-  const tableStartY = yPosition
-  const col1X = 20
-  const col2X = pageWidth - 60
-
-  doc.text(`Daily Rate:`, col1X, yPosition)
-  doc.text(formatCurrency(contract.dailyRate), col2X, yPosition, { align: "right" })
-
-  yPosition += 6
-  doc.text(`Number of Days:`, col1X, yPosition)
-  doc.text(`${contract.days}`, col2X, yPosition, { align: "right" })
-
-  yPosition += 6
-  doc.text(`Subtotal:`, col1X, yPosition)
-  doc.text(formatCurrency(contract.subtotal), col2X, yPosition, { align: "right" })
-
-  if (contract.discount && contract.discount > 0) {
-    yPosition += 6
-    doc.text(`Discount:`, col1X, yPosition)
-    doc.text(`-${formatCurrency(contract.discount)}`, col2X, yPosition, { align: "right" })
+  if (customer.phone) {
+    doc.text(`Phone: ${customer.phone}`, col1X, leftY);
+    leftY += 12;
   }
 
-  if (contract.taxRate && contract.taxRate > 0) {
-    const taxAmount = (contract.subtotal - (contract.discount || 0)) * (contract.taxRate / 100)
-    yPosition += 6
-    doc.text(`Tax (${contract.taxRate}%):`, col1X, yPosition)
-    doc.text(formatCurrency(taxAmount), col2X, yPosition, { align: "right" })
+  // Right: License + Second Driver
+  if (contract.licenseNumber) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`License No: ${contract.licenseNumber}`, col2X, rightY);
+    rightY += 14;
   }
 
-  // Total line
-  yPosition += 8
-  doc.setDrawColor(0, 0, 0)
-  doc.line(col1X, yPosition - 2, pageWidth - 20, yPosition - 2)
+  if (contract.secondDriverName || contract.secondDriverLicense) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("Second Driver:", col2X, rightY);
+    rightY += 14;
 
-  doc.setFont("helvetica", "bold")
-  doc.setFontSize(12)
-  doc.text(`TOTAL AMOUNT:`, col1X, yPosition + 4)
-  doc.text(formatCurrency(contract.total), col2X, yPosition + 4, { align: "right" })
-
-  // Status
-  yPosition += 14
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "normal")
-  doc.text(`Status: ${contract.status.toUpperCase()}`, 20, yPosition)
-
-  // Notes Section (if any)
-  if (contract.notes) {
-    yPosition += 10
-    doc.setFontSize(12)
-    doc.setFont("helvetica", "bold")
-    doc.text("NOTES", 20, yPosition)
-
-    yPosition += 8
-    doc.setFontSize(10)
-    doc.setFont("helvetica", "normal")
-    const splitNotes = doc.splitTextToSize(contract.notes, pageWidth - 40)
-    doc.text(splitNotes, 20, yPosition)
-    yPosition += splitNotes.length * 5
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    if (contract.secondDriverName) {
+      doc.text(`Name: ${contract.secondDriverName}`, col2X, rightY);
+      rightY += 12;
+    }
+    if (contract.secondDriverLicense) {
+      doc.text(`License No: ${contract.secondDriverLicense}`, col2X, rightY);
+      rightY += 12;
+    }
   }
 
-  // Terms and Conditions
-  yPosition += 15
-  if (yPosition > pageHeight - 60) {
-    doc.addPage()
-    yPosition = 20
+  y = Math.max(leftY, rightY) + 18;
+
+  // ---------- VEHICLE DETAILS (LEFT) ----------
+  leftY = y;
+  rightY = y;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Vehicle Details", col1X, leftY);
+  leftY += 14;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`Car: ${car.name}`, col1X, leftY);
+  leftY += 12;
+
+  if (car.brand || car.model) {
+    const modelLine = `Model: ${car.brand ?? ""} ${car.model ?? ""}`.trim();
+    if (modelLine !== "Model:") {
+      doc.text(modelLine, col1X, leftY);
+      leftY += 12;
+    }
   }
 
-  doc.setFontSize(12)
-  doc.setFont("helvetica", "bold")
-  doc.text("TERMS AND CONDITIONS", 20, yPosition)
-
-  yPosition += 8
-  doc.setFontSize(9)
-  doc.setFont("helvetica", "normal")
-  const terms = [
-    "1. The renter must present a valid driver's license and identification.",
-    "2. The vehicle must be returned in the same condition as received.",
-    "3. Any damage to the vehicle will be charged to the renter.",
-    "4. Late returns may incur additional charges.",
-    "5. The renter is responsible for all traffic violations during the rental period.",
-  ]
-
-  terms.forEach((term) => {
-    const splitTerm = doc.splitTextToSize(term, pageWidth - 40)
-    doc.text(splitTerm, 20, yPosition)
-    yPosition += splitTerm.length * 4 + 2
-  })
-
-  // Signature Section
-  yPosition += 15
-  if (yPosition > pageHeight - 40) {
-    doc.addPage()
-    yPosition = 20
+  if (car.registrationNumber || car.plateNumber) {
+    const regLine = `Reg. / Plate: ${
+      car.registrationNumber ?? car.plateNumber ?? ""
+    }`.trim();
+    if (regLine !== "Reg. / Plate:") {
+      doc.text(regLine, col1X, leftY);
+      leftY += 12;
+    }
   }
 
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "normal")
+  y = Math.max(leftY, rightY) + 18;
 
-  const signatureY = yPosition + 15
-  doc.line(20, signatureY, 80, signatureY)
-  doc.line(pageWidth - 80, signatureY, pageWidth - 20, signatureY)
+  // ---------- RENTAL PERIOD + CHARGES SUMMARY (2 COL) ----------
+  leftY = y;
+  rightY = y;
 
-  doc.text("Customer Signature", 20, signatureY + 5)
-  doc.text("Company Representative", pageWidth - 80, signatureY + 5)
+  // Left title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Rental Period", col1X, leftY);
 
-  doc.text(`Date: __________`, 20, signatureY + 12)
-  doc.text(`Date: __________`, pageWidth - 80, signatureY + 12)
+  // Right title
+  doc.text("Charges Summary", col2X, rightY);
 
-  // Footer
-  doc.setFontSize(8)
-  doc.setTextColor(128, 128, 128)
-  doc.text(`Generated on ${formatDate(new Date().toISOString())}`, pageWidth / 2, pageHeight - 10, { align: "center" })
+  leftY += 14;
+  rightY += 14;
 
-  return doc
-}
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
 
-export function downloadContractPDF(
-  contract: Contract,
-  customer: Customer,
-  car: Car,
-  companyInfo?: {
-    name: string
-    address: string
-    phone: string
-    email: string
-  },
-) {
-  const doc = generateContractPDF(contract, customer, car, companyInfo)
-  doc.save(`Contract_${contract.contractNumber}.pdf`)
+  // Left column: period details
+  doc.text(
+    `Start: ${contract.startDate?.slice(0, 10) ?? ""} | End: ${
+      contract.endDate?.slice(0, 10) ?? ""
+    } | Days: ${contract.days}`,
+    col1X,
+    leftY
+  );
+  leftY += 12;
+
+  if (contract.pickupTime || contract.deliveryTime) {
+    doc.text(
+      `Pickup time: ${contract.pickupTime ?? "-"} | Delivery time: ${
+        contract.deliveryTime ?? "-"
+      }`,
+      col1X,
+      leftY
+    );
+    leftY += 12;
+  }
+
+  if (contract.fuelAmount != null) {
+    doc.text(`Fuel level (bars): ${contract.fuelAmount}`, col1X, leftY);
+    leftY += 12;
+  }
+
+  if (contract.preAuthorization) {
+    doc.text(`Pre-authorization: ${contract.preAuthorization}`, col1X, leftY);
+    leftY += 12;
+  }
+
+  // Right column: charges
+  chargesRowsRight.forEach((row) => {
+    doc.text(`${row.label}: ${row.value}`, col2X, rightY);
+    rightY += 12;
+  });
+
+  // Also show left charges (daily rate + subtotal) under left column
+  leftY += 8;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Charges Summary", col1X, leftY);
+  leftY += 14;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  chargesRowsLeft.forEach((row) => {
+    doc.text(`${row.label}: ${row.value}`, col1X, leftY);
+    leftY += 12;
+  });
+
+  y = Math.max(leftY, rightY) + 18;
+
+  // ---------- PAYMENT (SINGLE LINE, LIKE SCREENSHOT) ----------
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Payment", col1X, y);
+  y += 14;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(
+    `Payment mode: ${contract.paymentMode ?? "-"} | Total paid: ${formatMoney(
+      contract.total
+    )} | Notes: ${notesSnippet}`,
+    col1X,
+    y
+  );
+
+  // ---------- SIGNATURES (ONLY CUSTOMER) ----------
+  y += 40;
+  if (y > PAGE_HEIGHT - 120) {
+    doc.addPage();
+    y = TOP_MARGIN + 40;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Customer Signature", col1X, y);
+
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(180);
+  doc.line(col1X, y + 40, col1X + 220, y + 40);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("(Name & Sign)", col1X, y + 56);
+
+  // ---------- TERMS & CONDITIONS: TWO-COLUMN (NO OVERLAP) ----------
+  doc.addPage();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+
+  let termsY = TOP_MARGIN;
+  doc.text("Rental Terms & Conditions", MARGIN_LEFT, termsY);
+
+  termsY += 20;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+
+  // Split text once
+  const termsText = company.terms ?? "";
+
+  // Layout constants
+  const TWO_COL = true;
+
+  let colX = MARGIN_LEFT;
+  let yPos = termsY;
+
+  // Split text into lines based on column width
+  const wrappedLines = doc.splitTextToSize(termsText, COLUMN_WIDTH);
+
+  // Column index: 1 = left, 2 = right
+  let col = 1;
+
+  // SAFELY PRINT LINE FUNCTION
+  const printLine = (line: string) => {
+    // If we are at bottom → switch column OR new page
+    if (yPos > PAGE_HEIGHT - BOTTOM_MARGIN) {
+      if (col === 1 && TWO_COL) {
+        // SWITCH TO RIGHT COLUMN
+        col = 2;
+        colX = MARGIN_LEFT + COLUMN_WIDTH + COLUMN_GUTTER;
+        yPos = TOP_MARGIN;
+      } else {
+        // NEW PAGE, RESET
+        doc.addPage();
+        col = 1;
+        colX = MARGIN_LEFT;
+        yPos = TOP_MARGIN;
+      }
+    }
+
+    doc.text(line, colX, yPos);
+    yPos += 12;
+  };
+
+  // PRINT ALL LINES SAFELY
+  wrappedLines.forEach(printLine);
+
+  // ---------- SAVE ----------
+  const fileName = `Contract-${contract.contractNumber || contract.id}.pdf`;
+  doc.save(fileName);
 }

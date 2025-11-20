@@ -2,15 +2,28 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pencil, Trash2, Download, Images } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { getCustomerById } from "@/lib/services/customers";
 import { getCarById } from "@/lib/services/cars";
-import { downloadContractPDF } from "@/lib/utils/pdf-generator";
+import { getCompanyDetails } from "@/lib/services/company"; // 👈 NEW
+import { buildContractHtml } from "@/lib/utils/pdf-generator"; // 👈 now used
 import type { Contract } from "@/lib/types";
 import { ContractImagesDialog } from "@/components/contracts/contract-images-dialog";
 import Swal from "sweetalert2";
@@ -21,7 +34,10 @@ type ContractsTableProps = {
   onDelete: (contract: Contract) => void | Promise<void>;
 };
 
-const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const statusColors: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
   active: "default",
   completed: "secondary",
   draft: "outline",
@@ -37,7 +53,11 @@ type Enriched = Contract & {
   ownerSignatureBase64?: string;
 };
 
-export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTableProps) {
+export function ContractsTable({
+  contracts,
+  onEdit,
+  onDelete,
+}: ContractsTableProps) {
   const [rows, setRows] = useState<Enriched[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -60,7 +80,9 @@ export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTablePr
 
             return {
               ...contract,
-              customerName: customer ? `${customer.firstName} ${customer.lastName}` : "Unknown",
+              customerName: customer
+                ? `${customer.firstName} ${customer.lastName}`
+                : "Unknown",
               carName: car?.name ?? "Unknown",
             } as Enriched;
           })
@@ -78,12 +100,23 @@ export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTablePr
   }, [inputContracts]);
 
   const handleDownloadPDF = async (contract: Contract) => {
-    const [customer, car] = await Promise.all([getCustomerById(contract.customerId), getCarById(contract.carId)]);
-    if (!customer || !car) {
-      alert("Unable to generate PDF: Customer or car information not found");
+    const [customer, car, company] = await Promise.all([
+      getCustomerById(contract.customerId),
+      getCarById(contract.carId),
+      getCompanyDetails(), // 👈 pulls the single row you showed
+    ]);
+
+    if (!customer || !car || !company) {
+      alert("Unable to generate PDF: missing customer, car, or company details.");
       return;
     }
-    await downloadContractPDF(contract, customer, car);
+
+    await buildContractHtml({
+      contract,
+      customer,
+      car,
+      company,
+    });
   };
 
   const openImages = (contractId: string) => {
@@ -130,8 +163,14 @@ export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTablePr
     return (
       <div className="flex h-[400px] items-center justify-center rounded-lg border border-dashed ml-5 mr-5">
         <div className="text-center">
-          <p className="text-lg font-medium">{loading ? "Loading contracts…" : "No contracts found"}</p>
-          {!loading && <p className="text-sm text-muted-foreground">Create your first contract to get started</p>}
+          <p className="text-lg font-medium">
+            {loading ? "Loading contracts…" : "No contracts found"}
+          </p>
+          {!loading && (
+            <p className="text-sm text-muted-foreground">
+              Create your first contract to get started
+            </p>
+          )}
         </div>
       </div>
     );
@@ -146,14 +185,11 @@ export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTablePr
               <TableHead>Contract #</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Car</TableHead>
-              <TableHead>License #</TableHead>
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
               <TableHead>Days</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Client Sig.</TableHead>
-              <TableHead>Owner Sig.</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -163,40 +199,19 @@ export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTablePr
               const isCompleted = contract.status === "completed";
               return (
                 <TableRow key={contract.id}>
-                  <TableCell className="font-medium">{contract.contractNumber}</TableCell>
+                  <TableCell className="font-medium">
+                    {contract.contractNumber}
+                  </TableCell>
                   <TableCell>{contract.customerName}</TableCell>
                   <TableCell>{contract.carName}</TableCell>
-                  <TableCell>{contract.licenseNumber || "—"}</TableCell>
                   <TableCell>{formatDate(contract.startDate)}</TableCell>
                   <TableCell>{formatDate(contract.endDate)}</TableCell>
                   <TableCell>{contract.days}</TableCell>
                   <TableCell>{formatCurrency(contract.total)}</TableCell>
                   <TableCell>
-                    <Badge variant={statusColors[contract.status]}>{contract.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {contract.clientSignatureBase64 ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={contract.clientSignatureBase64}
-                        alt="Client signature"
-                        className="h-10 w-20 object-contain rounded border bg-white p-1"
-                      />
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {contract.ownerSignatureBase64 ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={contract.ownerSignatureBase64}
-                        alt="Owner signature"
-                        className="h-10 w-20 object-contain rounded border bg-white p-1"
-                      />
-                    ) : (
-                      "—"
-                    )}
+                    <Badge variant={statusColors[contract.status]}>
+                      {contract.status}
+                    </Badge>
                   </TableCell>
 
                   <TableCell>
@@ -207,14 +222,18 @@ export function ContractsTable({ contracts, onEdit, onDelete }: ContractsTablePr
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleDownloadPDF(contract)}>
+                        <DropdownMenuItem
+                          onClick={() => handleDownloadPDF(contract)}
+                        >
                           <Download className="mr-2 h-4 w-4" />
                           Download PDF
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem onClick={() => openImages(contract.id)}>
+                        <DropdownMenuItem
+                          onClick={() => openImages(contract.id)}
+                        >
                           <Images className="mr-2 h-4 w-4" />
-                          Show / Attach Images
+                          Show Images
                         </DropdownMenuItem>
 
                         {!isCompleted && (

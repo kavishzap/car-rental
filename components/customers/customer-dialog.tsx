@@ -1,25 +1,31 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { createCustomer, updateCustomer } from "@/lib/services/customers"
-import type { Customer } from "@/lib/types"
-import { useToast } from "@/hooks/use-toast"
-import { fileToBase64 } from "@/lib/utils/fileToBase64"
+import type React from "react";
+import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { createCustomer, updateCustomer } from "@/lib/services/customers";
+import type { Customer } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { fileToBase64 } from "@/lib/utils/fileToBase64";
 
 type CustomerDialogProps = {
-  open: boolean
-  customer: Customer | null
-  onClose: (shouldRefresh?: boolean) => void
-}
+  open: boolean;
+  customer: Customer | null;
+  onClose: (shouldRefresh?: boolean) => void;
+};
 
 export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps) {
-  const { toast } = useToast()
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -27,9 +33,13 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
     phone: "",
     nicOrPassport: "",
     address: "",
-    photoBase64: "", // NEW
-  })
-  const [submitting, setSubmitting] = useState(false)
+    city: "",        // NEW
+    country: "",     // NEW
+    license: "",     // NEW
+    notes: "",       // NEW
+    photoBase64: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (customer) {
@@ -40,8 +50,12 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
         phone: customer.phone,
         nicOrPassport: customer.nicOrPassport,
         address: customer.address || "",
+        city: customer.city || "",
+        country: customer.country || "",
+        license: customer.license || "",
+        notes: customer.notes || "",
         photoBase64: customer.photoBase64 || "",
-      })
+      });
     } else {
       setFormData({
         firstName: "",
@@ -50,39 +64,43 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
         phone: "",
         nicOrPassport: "",
         address: "",
+        city: "",
+        country: "",
+        license: "",
+        notes: "",
         photoBase64: "",
-      })
+      });
     }
-  }, [customer, open])
+  }, [customer, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
+    e.preventDefault();
+    setSubmitting(true);
     try {
       if (customer) {
-        await updateCustomer(customer.id, formData)
+        await updateCustomer(customer.id, formData);
         toast({
           title: "Customer updated",
           description: `${formData.firstName} ${formData.lastName} has been updated successfully.`,
-        })
+        });
       } else {
-        await createCustomer(formData as any)
+        await createCustomer(formData as any);
         toast({
           title: "Customer created",
           description: `${formData.firstName} ${formData.lastName} has been added to the system.`,
-        })
+        });
       }
-      onClose(true)
+      onClose(true);
     } catch (err: any) {
       toast({
         title: "Save failed",
         description: err?.message ?? "Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
@@ -93,7 +111,6 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Left column */}
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
               <Input
@@ -145,6 +162,34 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="license">License</Label>
+              <Input
+                id="license"
+                value={formData.license}
+                onChange={(e) => setFormData({ ...formData, license: e.target.value })}
+                placeholder="Driving license / ref"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                value={formData.country}
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -157,16 +202,27 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              placeholder="Extra info about the customer"
+            />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onClose()}>
               Cancel
             </Button>
             <Button type="submit" disabled={submitting}>
-              {customer ? (submitting ? "Updating…" : "Update") : (submitting ? "Creating…" : "Create")}
+              {customer ? (submitting ? "Updating…" : "Update") : submitting ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

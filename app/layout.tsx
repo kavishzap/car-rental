@@ -14,9 +14,9 @@ export const metadata: Metadata = {
   description: "Manage your car rental business",
   generator: "v0.app",
   icons: {
-    icon: "/car.png",
-    shortcut: "/car.png",
-    apple: "/car.png",
+    icon: "/Logo Paint retouched and resized.JPG",
+    shortcut: "/Logo Paint retouched and resized.JPG",
+    apple: "/Logo Paint retouched and resized.JPG",
   },
 }
 
