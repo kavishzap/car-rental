@@ -12,11 +12,22 @@ type ContractImageRow = {
   created_at: string;
 };
 
+function toDataUrl(raw: string): string {
+  const value = (raw ?? "").trim();
+  if (!value) return "";
+  if (value.startsWith("data:")) return value;
+
+  // Rows are stored as bare base64 (sometimes with a leading colon).
+  const cleaned = value.startsWith(":") ? value.slice(1) : value;
+  const mime = cleaned.startsWith("/9j/") ? "image/jpeg" : "image/png";
+  return `data:${mime};base64,${cleaned}`;
+}
+
 function mapRow(row: ContractImageRow): ContractImage {
   return {
     id: row.id,
     contractId: row.contract_id,
-    imageBase64: row.image_base64,
+    imageBase64: toDataUrl(row.image_base64),
     caption: row.caption ?? undefined,
     createdAt: row.created_at,
   };
@@ -25,10 +36,10 @@ function mapRow(row: ContractImageRow): ContractImage {
 export async function getContractImages(
   contractId: string
 ): Promise<ContractImage[]> {
-  console.log("📥 getContractImages() for contractId:", contractId);
+  console.log("getContractImages() for contractId:", contractId);
 
   const { data, error } = await supabase
-    .from("contract_images_sites") // ✅ FIXED: correct table name
+    .from("contract_images_sites")
     .select("*")
     .eq("contract_id", contractId)
     .order("created_at", { ascending: true });
@@ -47,7 +58,7 @@ export async function addContractImage(input: {
   caption?: string;
 }): Promise<ContractImage> {
   const { data, error } = await supabase
-    .from("contract_images_sites") // ✅ FIXED here too
+    .from("contract_images_sites")
     .insert({
       contract_id: input.contractId,
       image_base64: input.imageBase64,
@@ -78,7 +89,7 @@ export async function updateContractImage(
   }
 
   const { data, error } = await supabase
-    .from("contract_images_sites") // ✅ FIXED
+    .from("contract_images_sites")
     .update(patch)
     .eq("id", id)
     .select()
@@ -94,7 +105,7 @@ export async function updateContractImage(
 
 export async function deleteContractImage(id: string): Promise<void> {
   const { error } = await supabase
-    .from("contract_images_sites") // ✅ FIXED
+    .from("contract_images_sites")
     .delete()
     .eq("id", id);
 
@@ -103,3 +114,5 @@ export async function deleteContractImage(id: string): Promise<void> {
     throw new Error(error.message);
   }
 }
+
+

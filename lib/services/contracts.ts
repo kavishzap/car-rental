@@ -60,6 +60,17 @@ type ContractRow = {
   updated_at: string;
 };
 
+const normalizeImageDataUrl = (
+  raw?: string | null
+): string | undefined => {
+  const value = (raw ?? "").trim();
+  if (!value) return undefined;
+  if (value.startsWith("data:")) return value;
+  const cleaned = value.startsWith(":") ? value.slice(1) : value;
+  const mime = cleaned.startsWith("/9j/") ? "image/jpeg" : "image/png";
+  return `data:${mime};base64,${cleaned}`;
+};
+
 function toNum(value: string | number | null | undefined): number {
   if (value === null || value === undefined) return 0;
   if (typeof value === "number") return value;
@@ -88,7 +99,9 @@ function mapRowToContract(row: ContractRow): Contract {
     status: row.status as Contract["status"],
 
     licenseNumber: row.license_number ?? undefined,
-    clientSignatureBase64: row.client_signature_base64 ?? undefined,
+    clientSignatureBase64: normalizeImageDataUrl(
+      row.client_signature_base64
+    ),
 
     fuelAmount: row.fuel_amount ?? undefined,
     preAuthorization: row.pre_authorization ?? undefined,

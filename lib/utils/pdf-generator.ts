@@ -36,6 +36,15 @@ type BuildContractHtmlArgs = {
   company: CompanyDetails;
 };
 
+const normalizeImageDataUrl = (raw?: string | null): string | undefined => {
+  const value = (raw ?? "").trim();
+  if (!value) return undefined;
+  if (value.startsWith("data:")) return value;
+  const cleaned = value.startsWith(":") ? value.slice(1) : value;
+  const mime = cleaned.startsWith("/9j/") ? "image/jpeg" : "image/png";
+  return `data:${mime};base64,${cleaned}`;
+};
+
 export async function buildContractHtml({
   contract,
   customer,
@@ -97,11 +106,12 @@ export async function buildContractHtml({
   const headerTopY = y;
 
   // Logo
-  if (company.logo) {
+  const companyLogo = normalizeImageDataUrl(company.logo);
+  if (companyLogo) {
     try {
-      const isPng = company.logo.startsWith("data:image/png");
+      const isPng = companyLogo.startsWith("data:image/png");
       const imgType = isPng ? "PNG" : "JPEG";
-      doc.addImage(company.logo, imgType, MARGIN_LEFT, headerTopY, 80, 80);
+      doc.addImage(companyLogo, imgType, MARGIN_LEFT, headerTopY, 80, 80);
     } catch {
       // ignore logo errors
     }
@@ -383,11 +393,25 @@ export async function buildContractHtml({
 
   doc.setLineWidth(0.5);
   doc.setDrawColor(180);
-  doc.line(col1X, y + 40, col1X + 220, y + 40);
+  const customerSignature = normalizeImageDataUrl(
+    contract.clientSignatureBase64
+  );
+  const signatureY = y + 10;
+  if (customerSignature) {
+    const isPng = customerSignature.startsWith("data:image/png");
+    const imgType = isPng ? "PNG" : "JPEG";
+    try {
+      doc.addImage(customerSignature, imgType, col1X, signatureY, 180, 80);
+    } catch {
+      // ignore signature errors
+    }
+  }
+  const signatureLineY = customerSignature ? signatureY + 90 : y + 40;
+  doc.line(col1X, signatureLineY, col1X + 220, signatureLineY);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text("(Name & Sign)", col1X, y + 56);
+  doc.text("(Name & Sign)", col1X, signatureLineY + 16);
 
   // ---------- TERMS & CONDITIONS: TWO-COLUMN (NO OVERLAP) ----------
   doc.addPage();
