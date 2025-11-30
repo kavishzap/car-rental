@@ -8,6 +8,7 @@ export type Car = {
   model: string;
   year: number;
   plateNumber: string;
+  color?: string | null;
   pricePerDay: number;
   status: "available" | "maintenance" | "unavailable";
   km: number; // NEW

@@ -70,10 +70,17 @@ export function ContractDialog({
   const { toast } = useToast();
 
   const [customers, setCustomers] = useState<
-    Array<{ id: string; name: string }>
+    Array<{ id: string; name: string; license?: string | null }>
   >([]);
   const [cars, setCars] = useState<
-    Array<{ id: string; name: string; pricePerDay: number }>
+    Array<{
+      id: string;
+      name: string;
+      pricePerDay: number;
+      color?: string | null;
+      model?: string | null;
+      plateNumber?: string;
+    }>
   >([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -131,12 +138,16 @@ export function ContractDialog({
           customersList.map((c) => ({
             id: c.id,
             name: `${c.firstName} ${c.lastName}`,
+            license: c.license,
           }))
         );
         setCars(
           carsList.map((c) => ({
             id: c.id,
             name: c.name,
+            color: c.color,
+            model: c.model,
+            plateNumber: c.plateNumber,
             pricePerDay: c.pricePerDay,
           }))
         );
@@ -350,6 +361,17 @@ export function ContractDialog({
     // bookedDates will be loaded by the effect that watches formData.carId
   };
 
+  const handleCustomerChange = (customerId: string) => {
+    const selectedCustomer = customers.find((c) => c.id === customerId);
+    const licenseValue = selectedCustomer?.license?.trim();
+
+    setFormData((prev) => ({
+      ...prev,
+      customerId,
+      licenseNumber: licenseValue ? licenseValue : prev.licenseNumber,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -484,9 +506,7 @@ export function ContractDialog({
               <Label htmlFor="customerId">Customer</Label>
               <Select
                 value={formData.customerId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, customerId: value })
-                }
+                onValueChange={handleCustomerChange}
               >
                 <SelectTrigger id="customerId">
                   <SelectValue placeholder="Select customer" />
@@ -508,11 +528,21 @@ export function ContractDialog({
                   <SelectValue placeholder="Select car" />
                 </SelectTrigger>
                 <SelectContent>
-                  {cars.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} - {formatCurrency(c.pricePerDay)}/day
-                    </SelectItem>
-                  ))}
+                  {cars.map((c) => {
+                    const details = [
+                      c.color,
+                      c.model,
+                      c.plateNumber,
+                    ].filter(Boolean);
+                    const label = details.length
+                      ? `${c.name} • ${details.join(" • ")}`
+                      : c.name;
+                    return (
+                      <SelectItem key={c.id} value={c.id}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

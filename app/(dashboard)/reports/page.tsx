@@ -138,7 +138,9 @@ export default function ReportsPage() {
         <TabsList>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="cars">Cars</TabsTrigger>
-          <TabsTrigger value="customers">Customers</TabsTrigger>
+          {/*
+            <TabsTrigger value="customers">Customers</TabsTrigger>
+          */}
         </TabsList>
 
         <TabsContent value="revenue" className="space-y-4">
@@ -149,9 +151,11 @@ export default function ReportsPage() {
           <CarsReport />
         </TabsContent>
 
-        <TabsContent value="customers" className="space-y-4">
-          <CustomersReport />
-        </TabsContent>
+        {/*
+          <TabsContent value="customers" className="space-y-4">
+            <CustomersReport />
+          </TabsContent>
+        */}
       </Tabs>
     </div>
   );
