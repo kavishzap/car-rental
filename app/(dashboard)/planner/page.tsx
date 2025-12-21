@@ -57,9 +57,6 @@ export default function ContractsPlannerPage() {
   const [loading, setLoading] = useState(true);
 
   const [selectedCarId, setSelectedCarId] = useState<string | "all">("all");
-  const [selectedStatus, setSelectedStatus] = useState<
-    "all" | Contract["status"]
-  >("all");
 
   const [selectedEvent, setSelectedEvent] = useState<PlannerEvent | null>(null);
 
@@ -150,27 +147,19 @@ export default function ContractsPlannerPage() {
     });
   }, [contracts, cars, customers]);
 
-  // Apply filters (by car, by status)
+  // Apply filters (by car)
   const filteredEvents = useMemo(() => {
     return events.filter((ev) => {
       if (selectedCarId !== "all" && ev.carId !== selectedCarId) return false;
-      if (selectedStatus !== "all" && ev.status !== selectedStatus)
-        return false;
       return true;
     });
-  }, [events, selectedCarId, selectedStatus]);
+  }, [events, selectedCarId]);
 
-  // Color based on status
+  // Event styling
   const eventPropGetter = (event: PlannerEvent) => {
-    let bg = "#0f172a"; // default dark
-    if (event.status === "completed") bg = "#16a34a";
-    if (event.status === "cancelled") bg = "#dc2626";
-    if (event.status === "draft") bg = "#6b7280";
-    if (event.status === "overdue") bg = "#b91c1c";
-
     return {
       style: {
-        backgroundColor: bg,
+        backgroundColor: "#0f172a",
         borderRadius: "6px",
         border: "none",
         color: "white",
@@ -213,25 +202,6 @@ export default function ContractsPlannerPage() {
               </Select>
             </div>
 
-            {/* Status filter */}
-            <div className="min-w-[180px]">
-              <Select
-                value={selectedStatus}
-                onValueChange={(val: any) => setSelectedStatus(val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </CardHeader>
 
@@ -306,10 +276,6 @@ export default function ContractsPlannerPage() {
             <div>
               <span className="font-medium">Customer:</span>{" "}
               {selectedEvent.customerName}
-            </div>
-            <div>
-              <span className="font-medium">Status:</span>{" "}
-              {selectedEvent.status}
             </div>
             <div>
               <span className="font-medium">Start:</span>{" "}

@@ -270,8 +270,12 @@ export function ContractDialog({
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
+      // Normalize to midnight to avoid time-of-day issues
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
       const ms = end.getTime() - start.getTime();
-      const diffDays = ms <= 0 ? 0 : Math.ceil(ms / (1000 * 60 * 60 * 24));
+      // Add 1 to make it inclusive (Dec 1 to Dec 8 = 8 days)
+      const diffDays = ms < 0 ? 0 : Math.floor(ms / (1000 * 60 * 60 * 24)) + 1;
       setFormData((prev) => ({ ...prev, days: diffDays }));
     } else {
       setFormData((prev) => ({ ...prev, days: 0 }));
@@ -760,7 +764,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="simAmount">SIM (amount)</Label>
+              <Label htmlFor="simAmount">GPS</Label>
               <Input
                 id="simAmount"
                 type="number"

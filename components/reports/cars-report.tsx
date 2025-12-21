@@ -107,7 +107,10 @@ export function CarsReport() {
             <TableBody>
               {carsData.map((car) => (
                 <TableRow key={car.id}>
-                  <TableCell className="font-medium">{car.name}</TableCell>
+                  <TableCell className="font-medium">
+                    {car.name}
+                    {car.plateNumber && `, ${car.plateNumber}`}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={statusColors[car.status]}>
                       {car.status}

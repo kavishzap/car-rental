@@ -92,9 +92,18 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
       }
       onClose(true);
     } catch (err: any) {
+      // Check for duplicate email error
+      const errorMessage = err?.message || "";
+      const isDuplicateEmail = 
+        errorMessage.includes("duplicate key") ||
+        errorMessage.includes("unique constraint") ||
+        err?.code === "23505";
+
       toast({
         title: "Save failed",
-        description: err?.message ?? "Please try again.",
+        description: isDuplicateEmail
+          ? "A customer with this email address already exists. Please use a different email."
+          : err?.message ?? "Please try again.",
         variant: "destructive",
       });
     } finally {

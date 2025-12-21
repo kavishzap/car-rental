@@ -83,7 +83,7 @@ export async function buildContractHtml({
   ];
 
   const chargesRowsRight = [
-    { label: "SIM", value: formatMoney(contract.simAmount ?? 0) },
+    { label: "GPS", value: formatMoney(contract.simAmount ?? 0) },
     { label: "Delivery", value: formatMoney(contract.deliveryAmount ?? 0) },
     { label: "Siège BB", value: formatMoney(contract.siegeBBAmount ?? 0) },
     {
@@ -228,6 +228,11 @@ export async function buildContractHtml({
 
   if (customer.phone) {
     doc.text(`Phone: ${customer.phone}`, col1X, leftY);
+    leftY += 12;
+  }
+
+  if (customer.address) {
+    doc.text(`Address: ${customer.address}`, col1X, leftY);
     leftY += 12;
   }
 
