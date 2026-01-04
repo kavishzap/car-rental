@@ -113,7 +113,10 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent 
+        className="max-w-2xl"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{customer ? "Edit Customer" : "Add New Customer"}</DialogTitle>
         </DialogHeader>

@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -172,38 +180,37 @@ export default function ContractsPlannerPage() {
     ? cars.find((c) => c.id === selectedEvent.carId)
     : undefined;
   return (
-    <div className="p-6 space-y-4">
-      <Card>
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <CardTitle>Contracts Planner</CardTitle>
-
-          <div className="flex flex-wrap gap-3">
-            {/* Car filter */}
-            <div className="min-w-[180px]">
-              <Select
-                value={selectedCarId}
-                onValueChange={(val) =>
-                  setSelectedCarId(val === "all" ? "all" : val)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by car" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All cars</SelectItem>
-                  {cars.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.plateNumber
-                        ? `${c.plateNumber} – ${c.name}`
-                        : c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Contracts Planner"
+        actions={
+          <div className="min-w-[180px]">
+            <Select
+              value={selectedCarId}
+              onValueChange={(val) =>
+                setSelectedCarId(val === "all" ? "all" : val)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by car" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All cars</SelectItem>
+                {cars.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.plateNumber
+                      ? `${c.plateNumber} – ${c.name}`
+                      : c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </CardHeader>
+        }
+      />
+
+      <div className="px-6 space-y-4">
+        <Card>
 
         <CardContent>
           {loading ? (
@@ -233,61 +240,104 @@ export default function ContractsPlannerPage() {
         </CardContent>
       </Card>
 
-      {selectedEvent && (
-        <Card className="border-primary/40">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Booking details</CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setSelectedEvent(null)}
-            >
-              Close
-            </Button>
-          </CardHeader>
-          <CardContent className="grid gap-2 text-sm md:grid-cols-2 lg:grid-cols-3">
-            {/* 🔹 Car block with full details */}
-            <div className="space-y-1">
-              <div>
-                <span className="font-medium">Car:</span>{" "}
-                {selectedCar?.name ?? "Unknown car"}
+      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+        <DialogContent 
+          className="max-w-3xl"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Car Information Section */}
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-foreground border-b pb-2">
+                Car Information
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground font-medium">Car Name</span>
+                    <span className="text-sm font-medium">{selectedCar?.name ?? "Unknown car"}</span>
+                  </div>
+                  {selectedCar?.plateNumber && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground font-medium">Plate Number</span>
+                      <span className="text-sm">{selectedCar.plateNumber}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {selectedCar?.brand && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground font-medium">Brand</span>
+                      <span className="text-sm">{selectedCar.brand}</span>
+                    </div>
+                  )}
+                  {selectedCar?.model && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground font-medium">Model</span>
+                      <span className="text-sm">{selectedCar.model}</span>
+                    </div>
+                  )}
+                  {selectedCar?.pricePerDay && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground font-medium">Rate per Day</span>
+                      <span className="text-sm font-medium">{selectedCar.pricePerDay} MUR</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              {selectedCar?.brand && (
-                <div>
-                  <span className="font-medium">Brand:</span>{" "}
-                  {selectedCar.brand}
-                </div>
-              )}
-              {selectedCar?.model && (
-                <div>
-                  <span className="font-medium">Model:</span>{" "}
-                  {selectedCar.model}
-                </div>
-              )}
-              {selectedCar?.pricePerDay && (
-                <div>
-                  <span className="font-medium">Rate per day:</span>{" "}
-                  {selectedCar.pricePerDay}
-                </div>
-              )}
             </div>
 
-            {/* Existing fields stay the same */}
-            <div>
-              <span className="font-medium">Customer:</span>{" "}
-              {selectedEvent.customerName}
+            {/* Divider */}
+            <div className="border-t"></div>
+
+            {/* Customer Information Section */}
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-foreground border-b pb-2">
+                Customer Information
+              </h3>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground font-medium">Customer Name</span>
+                <span className="text-sm font-medium">{selectedEvent?.customerName ?? "Unknown customer"}</span>
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Start:</span>{" "}
-              {format(selectedEvent.start as Date, "PPP")}
+
+            {/* Divider */}
+            <div className="border-t"></div>
+
+            {/* Rental Period Section */}
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-foreground border-b pb-2">
+                Rental Period
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground font-medium">Start Date</span>
+                  <span className="text-sm font-medium">
+                    {selectedEvent && format(selectedEvent.start as Date, "PPP")}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground font-medium">End Date</span>
+                  <span className="text-sm font-medium">
+                    {selectedEvent && format(selectedEvent.end as Date, "PPP")}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="font-medium">End:</span>{" "}
-              {format(selectedEvent.end as Date, "PPP")}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </div>
     </div>
   );
 }

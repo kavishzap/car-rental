@@ -124,3 +124,118 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Big Calendar Dark Mode Styles */
+.dark .rbc-calendar {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+.dark .rbc-header {
+  background-color: var(--muted);
+  border-bottom-color: var(--border);
+  color: var(--foreground);
+  padding: 0.5rem;
+  font-weight: 500;
+}
+
+.dark .rbc-today {
+  background-color: oklch(0.18 0 0 / 0.3);
+}
+
+.dark .rbc-off-range-bg {
+  background-color: oklch(0.18 0 0 / 0.2);
+}
+
+.dark .rbc-off-range {
+  color: var(--muted-foreground);
+}
+
+.dark .rbc-date-cell {
+  color: var(--foreground);
+}
+
+.dark .rbc-date-cell > a {
+  color: var(--foreground);
+}
+
+.dark .rbc-day-bg {
+  background-color: var(--card);
+  border-color: var(--border);
+}
+
+.dark .rbc-day-bg.rbc-off-range-bg {
+  background-color: oklch(0.18 0 0 / 0.15);
+}
+
+.dark .rbc-day-bg:has(.rbc-day-bg.rbc-now) {
+  background-color: oklch(0.18 0 0 / 0.3);
+}
+
+.dark .rbc-month-row {
+  border-color: var(--border);
+}
+
+/* Weekend cells styling */
+.dark .rbc-day-bg:nth-child(6),
+.dark .rbc-day-bg:nth-child(7) {
+  background-color: oklch(0.2 0 0);
+}
+
+.dark .rbc-date-cell.rbc-off-range-bg {
+  color: var(--muted-foreground);
+}
+
+.dark .rbc-month-view {
+  border-color: var(--border);
+}
+
+.dark .rbc-toolbar {
+  color: var(--foreground);
+  margin-bottom: 1rem;
+}
+
+.dark .rbc-toolbar button {
+  background-color: var(--secondary);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.dark .rbc-toolbar button:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.dark .rbc-toolbar button.rbc-active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.dark .rbc-event {
+  background-color: #0f172a;
+  border: none;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.dark .rbc-event:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.dark .rbc-selected {
+  background-color: oklch(0.6 0.18 250 / 0.3);
+}
+
+.dark .rbc-show-more {
+  background-color: var(--secondary);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.dark .rbc-show-more:hover {
+  background-color: var(--accent);
+}

@@ -120,7 +120,10 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent 
+        className="max-w-2xl"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{car ? "Edit Car" : "Add New Car"}</DialogTitle>
         </DialogHeader>

@@ -493,7 +493,10 @@ export function ContractDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-h-[85vh] w-[70vw] max-w-2xl xl:max-w-5xl overflow-hidden flex flex-col">
+      <DialogContent 
+        className="max-h-[85vh] w-[70vw] max-w-2xl xl:max-w-5xl overflow-hidden flex flex-col"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             {contract ? "Edit Contract" : "Create New Contract"}
@@ -512,7 +515,7 @@ export function ContractDialog({
                 value={formData.customerId}
                 onValueChange={handleCustomerChange}
               >
-                <SelectTrigger id="customerId">
+                <SelectTrigger id="customerId" className="w-full">
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -528,7 +531,7 @@ export function ContractDialog({
             <div className="space-y-2">
               <Label htmlFor="carId">Car</Label>
               <Select value={formData.carId} onValueChange={handleCarChange}>
-                <SelectTrigger id="carId">
+                <SelectTrigger id="carId" className="w-full">
                   <SelectValue placeholder="Select car" />
                 </SelectTrigger>
                 <SelectContent>
@@ -560,7 +563,7 @@ export function ContractDialog({
                   setFormData({ ...formData, status: value })
                 }
               >
-                <SelectTrigger id="status">
+                <SelectTrigger id="status" className="w-full">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -655,6 +658,23 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="dailyRate">Daily Rate</Label>
+              <Input
+                id="dailyRate"
+                type="number"
+                step="0.01"
+                value={formData.dailyRate}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    dailyRate: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="pickupTime">Pickup Time</Label>
               <Input
                 id="pickupTime"
@@ -675,23 +695,6 @@ export function ContractDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, deliveryTime: e.target.value })
                 }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dailyRate">Daily Rate</Label>
-              <Input
-                id="dailyRate"
-                type="number"
-                step="0.01"
-                value={formData.dailyRate}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    dailyRate: Number.parseFloat(e.target.value) || 0,
-                  })
-                }
-                required
               />
             </div>
 
@@ -732,7 +735,7 @@ export function ContractDialog({
                   })
                 }
               >
-                <SelectTrigger id="fuelAmount">
+                <SelectTrigger id="fuelAmount" className="w-full">
                   <SelectValue placeholder="Select fuel amount" />
                 </SelectTrigger>
                 <SelectContent>
@@ -884,7 +887,7 @@ export function ContractDialog({
                   setFormData({ ...formData, paymentMode: value })
                 }
               >
-                <SelectTrigger id="paymentMode">
+                <SelectTrigger id="paymentMode" className="w-full">
                   <SelectValue placeholder="Select payment mode" />
                 </SelectTrigger>
                 <SelectContent>
@@ -898,8 +901,8 @@ export function ContractDialog({
           </div>
 
           {/* Payment + extras */}
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            <div className="space-y-2 max-w-xs">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="space-y-2">
               <Label htmlFor="total">Total (incl. extras)</Label>
               <Input
                 id="total"
@@ -908,7 +911,7 @@ export function ContractDialog({
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-1 xl:col-span-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
@@ -917,25 +920,24 @@ export function ContractDialog({
                   setFormData({ ...formData, notes: e.target.value })
                 }
                 rows={4}
+                className="w-full"
               />
             </div>
 
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label>Client Signature</Label>
-                {formData.clientSignatureBase64 ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={formData.clientSignatureBase64}
-                    alt="Client signature"
-                    className="h-28 w-full max-w-sm rounded border bg-white object-contain p-2"
-                  />
-                ) : (
-                  <div className="h-28 w-full max-w-sm rounded border bg-muted/30 flex items-center justify-center text-xs text-muted-foreground">
-                    No signature
-                  </div>
-                )}
-              </div>
+            <div className="space-y-2 md:col-span-2 xl:col-span-1">
+              <Label>Client Signature</Label>
+              {formData.clientSignatureBase64 ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={formData.clientSignatureBase64}
+                  alt="Client signature"
+                  className="h-28 w-full rounded border bg-white object-contain p-2"
+                />
+              ) : (
+                <div className="h-28 w-full rounded border bg-muted/30 flex items-center justify-center text-xs text-muted-foreground">
+                  No signature
+                </div>
+              )}
             </div>
           </div>
 
