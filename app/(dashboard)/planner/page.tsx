@@ -21,7 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { getContracts } from "@/lib/services/contracts";
 import { getCars } from "@/lib/services/cars";
-import { getCustomers } from "@/lib/services/customers";
+import { getCustomers, getCustomerById } from "@/lib/services/customers";
 import type { Contract } from "@/lib/types";
 import type { Car } from "@/lib/types";
 import {
@@ -179,6 +179,31 @@ export default function ContractsPlannerPage() {
   const selectedCar = selectedEvent
     ? cars.find((c) => c.id === selectedEvent.carId)
     : undefined;
+  
+  const [selectedCustomer, setSelectedCustomer] = useState<{ email: string; phone: string } | null>(null);
+
+  useEffect(() => {
+    if (selectedEvent) {
+      (async () => {
+        try {
+          const customer = await getCustomerById(selectedEvent.customerId);
+          if (customer) {
+            setSelectedCustomer({
+              email: customer.email || "",
+              phone: customer.phone || "",
+            });
+          } else {
+            setSelectedCustomer(null);
+          }
+        } catch {
+          setSelectedCustomer(null);
+        }
+      })();
+    } else {
+      setSelectedCustomer(null);
+    }
+  }, [selectedEvent]);
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -299,9 +324,27 @@ export default function ContractsPlannerPage() {
               <h3 className="text-base font-semibold text-foreground border-b pb-2">
                 Customer Information
               </h3>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground font-medium">Customer Name</span>
-                <span className="text-sm font-medium">{selectedEvent?.customerName ?? "Unknown customer"}</span>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground font-medium">Customer Name</span>
+                    <span className="text-sm font-medium">{selectedEvent?.customerName ?? "Unknown customer"}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {selectedCustomer?.email && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground font-medium">Email</span>
+                      <span className="text-sm">{selectedCustomer.email}</span>
+                    </div>
+                  )}
+                  {selectedCustomer?.phone && (
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground font-medium">Phone</span>
+                      <span className="text-sm">{selectedCustomer.phone}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

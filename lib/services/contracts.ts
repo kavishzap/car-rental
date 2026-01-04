@@ -40,6 +40,7 @@ type ContractRow = {
   pickup_time: string | null;
   delivery_date: string | null;
   delivery_time: string | null;
+  delivery_place: string | null;
   siege_bb_amount: string | number | null; // 👈 NEW
   rehausseur_amount: string | number | null; // 👈 NEW
 
@@ -53,6 +54,8 @@ type ContractRow = {
 
   second_driver_name: string | null;
   second_driver_license: string | null;
+
+  customer_data: string | null;
 
   notes: string | null;
 
@@ -99,6 +102,7 @@ function mapRowToContract(row: ContractRow): Contract {
     status: row.status as Contract["status"],
 
     licenseNumber: row.license_number ?? undefined,
+    customerNicOrPassport: row.customer_data ?? undefined,
     clientSignatureBase64: normalizeImageDataUrl(
       row.client_signature_base64
     ),
@@ -111,6 +115,7 @@ function mapRowToContract(row: ContractRow): Contract {
     pickupTime: row.pickup_time ?? undefined,
     deliveryDate: row.delivery_date ?? undefined,
     deliveryTime: row.delivery_time ?? undefined,
+    deliveryPlace: row.delivery_place ?? undefined,
 
     paymentMode: (row.payment_mode as Contract["paymentMode"]) ?? undefined,
 
@@ -151,6 +156,7 @@ function payloadToRow(
     status: payload.status,
 
     license_number: payload.licenseNumber ?? null,
+    customer_data: payload.customerNicOrPassport ?? null,
     client_signature_base64: payload.clientSignatureBase64 ?? null,
     siege_bb_amount: payload.siegeBBAmount ?? null, // 👈 NEW
     rehausseur_amount: payload.rehausseurAmount ?? null, // 👈 NEW
@@ -161,6 +167,7 @@ function payloadToRow(
     pickup_time: payload.pickupTime ?? null,
     delivery_date: payload.deliveryDate ?? null,
     delivery_time: payload.deliveryTime ?? null,
+    delivery_place: payload.deliveryPlace ?? null,
 
     payment_mode: payload.paymentMode ?? null,
 

@@ -70,7 +70,7 @@ export function ContractDialog({
   const { toast } = useToast();
 
   const [customers, setCustomers] = useState<
-    Array<{ id: string; name: string; license?: string | null }>
+    Array<{ id: string; name: string; license?: string | null; nicOrPassport?: string | null }>
   >([]);
   const [cars, setCars] = useState<
     Array<{
@@ -102,6 +102,7 @@ export function ContractDialog({
     status: "draft" as "draft" | "completed" | "cancelled",
     notes: "",
     licenseNumber: "",
+    customerNicOrPassport: "",
     clientSignatureBase64: "",
 
     siegeBBAmount: 0,
@@ -112,6 +113,7 @@ export function ContractDialog({
     pickupTime: "",
     deliveryDate: "",
     deliveryTime: "",
+    deliveryPlace: "",
     paymentMode: "",
     simAmount: 0,
     deliveryAmount: 0,
@@ -139,6 +141,7 @@ export function ContractDialog({
             id: c.id,
             name: `${c.firstName} ${c.lastName}`,
             license: c.license,
+            nicOrPassport: c.nicOrPassport,
           }))
         );
         setCars(
@@ -177,6 +180,7 @@ export function ContractDialog({
         status: contract.status,
         notes: contract.notes || "",
         licenseNumber: contract.licenseNumber || "",
+        customerNicOrPassport: contract.customerNicOrPassport || "",
         clientSignatureBase64: contract.clientSignatureBase64 || "",
 
         fuelAmount: (contract as any).fuelAmount ?? 0,
@@ -189,6 +193,7 @@ export function ContractDialog({
           ? (contract as any).deliveryDate.split("T")[0]
           : "",
         deliveryTime: (contract as any).deliveryTime ?? "",
+        deliveryPlace: contract.deliveryPlace || "",
         paymentMode: (contract as any).paymentMode ?? "",
 
         siegeBBAmount: (contract as any).siegeBBAmount ?? 0,
@@ -217,6 +222,7 @@ export function ContractDialog({
         status: "draft",
         notes: "",
         licenseNumber: "",
+        customerNicOrPassport: "",
         clientSignatureBase64: "",
         fuelAmount: 0,
         preAuthorization: "",
@@ -224,6 +230,7 @@ export function ContractDialog({
         pickupTime: "",
         deliveryDate: "",
         deliveryTime: "",
+        deliveryPlace: "",
         paymentMode: "",
         siegeBBAmount: 0,
         rehausseurAmount: 0,
@@ -368,11 +375,13 @@ export function ContractDialog({
   const handleCustomerChange = (customerId: string) => {
     const selectedCustomer = customers.find((c) => c.id === customerId);
     const licenseValue = selectedCustomer?.license?.trim();
+    const nicOrPassportValue = selectedCustomer?.nicOrPassport?.trim();
 
     setFormData((prev) => ({
       ...prev,
       customerId,
       licenseNumber: licenseValue ? licenseValue : prev.licenseNumber,
+      customerNicOrPassport: nicOrPassportValue ? nicOrPassportValue : prev.customerNicOrPassport,
     }));
   };
 
@@ -434,6 +443,7 @@ export function ContractDialog({
         status: formData.status,
         notes: formData.notes,
         licenseNumber: formData.licenseNumber,
+        customerNicOrPassport: formData.customerNicOrPassport || "",
         clientSignatureBase64: formData.clientSignatureBase64 || undefined,
 
         fuelAmount: formData.fuelAmount || 0,
@@ -446,6 +456,7 @@ export function ContractDialog({
           ? new Date(formData.deliveryDate).toISOString()
           : null,
         deliveryTime: formData.deliveryTime || "",
+        deliveryPlace: formData.deliveryPlace || "",
         paymentMode: formData.paymentMode || "",
         siegeBBAmount: formData.siegeBBAmount || 0,
         rehausseurAmount: formData.rehausseurAmount || 0,
@@ -699,6 +710,18 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="deliveryPlace">Delivery Place</Label>
+              <Input
+                id="deliveryPlace"
+                placeholder="Delivery location"
+                value={formData.deliveryPlace}
+                onChange={(e) =>
+                  setFormData({ ...formData, deliveryPlace: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="days">Days</Label>
               <Input id="days" type="number" value={formData.days} disabled />
             </div>
@@ -720,6 +743,18 @@ export function ContractDialog({
                 value={formData.licenseNumber}
                 onChange={(e) =>
                   setFormData({ ...formData, licenseNumber: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="customerNicOrPassport">Customer NIC/Passport</Label>
+              <Input
+                id="customerNicOrPassport"
+                placeholder="Customer NIC/Passport number"
+                value={formData.customerNicOrPassport}
+                onChange={(e) =>
+                  setFormData({ ...formData, customerNicOrPassport: e.target.value })
                 }
               />
             </div>

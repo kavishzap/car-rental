@@ -82,6 +82,7 @@ export interface Contract {
   status: ContractStatus;
 
   licenseNumber?: string | null;
+  customerNicOrPassport?: string | null;
   clientSignatureBase64?: string | null;
 
   fuelAmount?: number | null;
@@ -91,6 +92,7 @@ export interface Contract {
   pickupTime?: string | null;
   deliveryDate?: string | null;
   deliveryTime?: string | null;
+  deliveryPlace?: string | null;
 
   paymentMode?: "cash" | "card" | "bank_transfer" | "other" | null;
 
