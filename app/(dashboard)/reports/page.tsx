@@ -11,11 +11,13 @@ import { Download } from "lucide-react";
 import { getContracts } from "@/lib/services/contracts";
 import { getCars } from "@/lib/services/cars";
 import { getCustomers } from "@/lib/services/customers";
+import { getVehicleRegisters } from "@/lib/services/vehicleRegister";
 import { formatCurrency } from "@/lib/utils/format";
 import { RevenueReport } from "@/components/reports/revenue-report";
 import { CarsReport } from "@/components/reports/cars-report";
 import { CustomersReport } from "@/components/reports/customers-report";
-import type { Contract, Customer, Car } from "@/lib/types";
+import type { Contract, Customer, Car, VehicleRegister } from "@/lib/types";
+import { AlertTriangle } from "lucide-react";
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState("30");
@@ -28,16 +30,18 @@ export default function ReportsPage() {
     utilizationRate: 0,
     totalCustomers: 0,
     repeatCustomers: 0,
+    mvlExpiringVehicles: [] as VehicleRegister[],
   });
 
   useEffect(() => {
     (async function loadReportData() {
       setLoading(true);
       try {
-        const [contracts, cars, customers]: [Contract[], Car[], Customer[]] = await Promise.all([
+        const [contracts, cars, customers, vehicles]: [Contract[], Car[], Customer[], VehicleRegister[]] = await Promise.all([
           getContracts(),
           getCars(),
           getCustomers(),
+          getVehicleRegisters(),
         ]);
 
         const daysAgo = Number.parseInt(dateRange);
@@ -73,6 +77,24 @@ export default function ReportsPage() {
         contracts.forEach((c) => counts.set(c.customerId, (counts.get(c.customerId) ?? 0) + 1));
         const repeatCustomers = Array.from(counts.values()).filter((n) => n > 1).length;
 
+        // MVL Expiry Alerts: vehicles expiring in the current month
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-indexed (0 = January, 11 = December)
+        
+        const mvlExpiringVehicles = vehicles.filter((v) => {
+          if (!v.mvlExpiry) return false;
+          
+          try {
+            // Parse date (format: YYYY-MM-DD)
+            const [year, month] = v.mvlExpiry.split("-").map(Number);
+            // Check if year matches and month matches (month is 1-indexed in date strings, so subtract 1)
+            return year === currentYear && (month - 1) === currentMonth;
+          } catch {
+            return false;
+          }
+        });
+
         setReportData({
           totalRevenue,
           totalContracts,
@@ -81,6 +103,7 @@ export default function ReportsPage() {
           utilizationRate,
           totalCustomers,
           repeatCustomers,
+          mvlExpiringVehicles,
         });
       } finally {
         setLoading(false);
@@ -100,7 +123,7 @@ export default function ReportsPage() {
       />
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ml-5 mr-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 ml-5 mr-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
@@ -129,6 +152,36 @@ export default function ReportsPage() {
             <div className="text-2xl font-bold">
               {loading ? "…" : formatCurrency(reportData.averageContractValue)}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className={reportData.mvlExpiringVehicles.length > 0 ? "border-orange-500" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className={`h-4 w-4 ${reportData.mvlExpiringVehicles.length > 0 ? "text-orange-500" : ""}`} />
+              MVL Expiry Alerts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading ? "…" : reportData.mvlExpiringVehicles.length}
+            </div>
+            {reportData.mvlExpiringVehicles.length > 0 && (
+              <div className="mt-3 space-y-1 text-sm">
+                {reportData.mvlExpiringVehicles.slice(0, 3).map((v) => (
+                  <div key={v.id} className="text-muted-foreground">
+                    {v.plateNo}
+                    {v.vehicleName && ` (${v.vehicleName})`}
+                    {v.mvlExpiry && ` - ${v.mvlExpiry}`}
+                  </div>
+                ))}
+                {reportData.mvlExpiringVehicles.length > 3 && (
+                  <div className="text-muted-foreground font-medium">
+                    +{reportData.mvlExpiringVehicles.length - 3} more
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

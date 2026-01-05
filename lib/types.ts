@@ -116,6 +116,24 @@ export interface Contract {
   ownerSignatureBase64?: string | null;
 }
 
+export type VehicleRegister = {
+  id: string;
+  plateNo: string;
+  vehicleName?: string | null;
+  model?: string | null;
+  color?: string | null;
+  psvLicenseNo?: string | null;
+  psvExpiry?: string | null;
+  fitnessExpiry?: string | null;
+  discNo?: string | null;
+  mvlExpiry?: string | null;
+  insurancePolicyNo?: string | null;
+  insuranceStartDate?: string | null;
+  insuranceEndDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ContractCreateInput = Omit<
   Contract,
   "id" | "createdAt" | "updatedAt" | "contractNumber"

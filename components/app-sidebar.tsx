@@ -10,6 +10,7 @@ import {
   LogOut,
   BriefcaseBusiness,
   Calendar,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/lib/auth";
@@ -23,6 +24,7 @@ const navigation = [
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Contracts", href: "/contracts", icon: FileSignature },
   { name: "Planner", href: "/planner", icon: Calendar },
+  { name: "Vehicle Registration", href: "/vehicle-registration", icon: FileText },
   { name: "Company", href: "/company", icon: BriefcaseBusiness },
 ];
 
