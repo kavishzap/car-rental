@@ -60,7 +60,7 @@ export type ContractImage = {
   createdAt: string;
 };
 
-export type ContractStatus = "draft" | "completed" | "cancelled";
+export type ContractStatus = "draft" | "active" | "completed" | "cancelled";
 
 export interface Contract {
   id: string;
