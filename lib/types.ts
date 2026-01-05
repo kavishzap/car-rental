@@ -11,7 +11,7 @@ export type Car = {
   color?: string | null;
   pricePerDay: number;
   status: "available" | "maintenance" | "unavailable";
-  km: number; // NEW
+  km: string | null; // NEW
   servicing: string | null; // NEW (e.g. "Next service in June 2026")
   nta: string | null; // NEW (e.g. NTA permit/expiry)
   psv: string | null; // NEW (e.g. PSV permit/expiry)

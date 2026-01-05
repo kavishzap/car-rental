@@ -83,13 +83,8 @@ export async function buildContractHtml({
   ];
 
   const chargesRowsRight = [
-    { label: "GPS", value: formatMoney(contract.simAmount ?? 0) },
+    { label: "SIM + Internet", value: formatMoney(contract.simAmount ?? 0) },
     { label: "Delivery", value: formatMoney(contract.deliveryAmount ?? 0) },
-    { label: "Siège BB", value: formatMoney(contract.siegeBBAmount ?? 0) },
-    {
-      label: "Rehausseur",
-      value: formatMoney(contract.rehausseurAmount ?? 0),
-    },
     {
       label: `Card fee (${contract.cardPaymentPercent ?? 0}%)`,
       value: formatMoney(contract.cardPaymentAmount ?? 0),

@@ -167,7 +167,7 @@ export default function ContractsPlannerPage() {
   const eventPropGetter = (event: PlannerEvent) => {
     return {
       style: {
-        backgroundColor: "#0f172a",
+        backgroundColor: "#3b82f6",
         borderRadius: "6px",
         border: "none",
         color: "white",

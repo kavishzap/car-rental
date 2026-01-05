@@ -25,11 +25,32 @@ import { createCar, updateCar } from "@/lib/services/cars";
 import type { Car } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { fileToBase64 } from "@/lib/utils/fileToBase64";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type CarDialogProps = {
   open: boolean;
   car: Car | null;
   onClose: (shouldRefresh?: boolean) => void;
+};
+
+/**
+ * Parse "YYYY-MM-DD" into Date at local midnight.
+ */
+const parseDateOnly = (dateStr: string) => {
+  if (!dateStr) return undefined;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  // Check if date is valid
+  if (isNaN(date.getTime())) return undefined;
+  return date;
 };
 
 export function CarDialog({ open, car, onClose }: CarDialogProps) {
@@ -42,7 +63,7 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
     plateNumber: "",
     pricePerDay: 0,
     status: "available" as "available" | "maintenance" | "unavailable",
-    km: 0,                // NEW
+    km: "",                // NEW
     servicing: "",        // NEW
     nta: "",              // NEW
     psv: "",              // NEW
@@ -60,7 +81,7 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
         plateNumber: car.plateNumber,
         pricePerDay: car.pricePerDay,
         status: car.status,
-        km: car.km ?? 0,
+        km: car.km ?? "",
         servicing: car.servicing ?? "",
         nta: car.nta ?? "",
         psv: car.psv ?? "",
@@ -76,7 +97,7 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
         plateNumber: "",
         pricePerDay: 0,
         status: "available",
-        km: 0,
+        km: "",
         servicing: "",
         nta: "",
         psv: "",
@@ -93,7 +114,7 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
       ...formData,
       year: Number(formData.year),
       pricePerDay: Number(formData.pricePerDay),
-      km: Number(formData.km),
+      km: formData.km.trim() || null,
       // servicing / nta / psv can stay as strings or be converted to null if empty
       servicing: formData.servicing.trim() || null,
       nta: formData.nta.trim() || null,
@@ -216,53 +237,135 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
               <Label htmlFor="km">KM</Label>
               <Input
                 id="km"
-                type="number"
+                type="text"
                 value={formData.km}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    km: Number.parseInt(e.target.value || "0", 10),
+                    km: e.target.value,
                   })
                 }
-                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="servicing">Servicing</Label>
-              <Input
-                id="servicing"
-                placeholder="e.g. Next service June 2026"
-                value={formData.servicing}
-                onChange={(e) =>
-                  setFormData({ ...formData, servicing: e.target.value })
-                }
-              />
+              <Label>Servicing</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.servicing && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.servicing ? (
+                      (() => {
+                        const date = parseDateOnly(formData.servicing);
+                        return date ? format(date, "PPP") : formData.servicing;
+                      })()
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      formData.servicing
+                        ? parseDateOnly(formData.servicing)
+                        : undefined
+                    }
+                    onSelect={(date) => {
+                      if (!date) return;
+                      const value = format(date, "yyyy-MM-dd");
+                      setFormData({ ...formData, servicing: value });
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* NEW FIELDS ROW 2 */}
             <div className="space-y-2">
-              <Label htmlFor="nta">NTA/Insurance/Fitness</Label>
-              <Input
-                id="nta"
-                placeholder="NTA permit/expiry"
-                value={formData.nta}
-                onChange={(e) =>
-                  setFormData({ ...formData, nta: e.target.value })
-                }
-              />
+              <Label>MVL Expiry Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.nta && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.nta ? (
+                      (() => {
+                        const date = parseDateOnly(formData.nta);
+                        return date ? format(date, "PPP") : formData.nta;
+                      })()
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      formData.nta ? parseDateOnly(formData.nta) || undefined : undefined
+                    }
+                    onSelect={(date) => {
+                      if (!date) return;
+                      const value = format(date, "yyyy-MM-dd");
+                      setFormData({ ...formData, nta: value });
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="psv">PSV</Label>
-              <Input
-                id="psv"
-                placeholder="PSV permit/expiry"
-                value={formData.psv}
-                onChange={(e) =>
-                  setFormData({ ...formData, psv: e.target.value })
-                }
-              />
+              <Label>PSV</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.psv && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.psv ? (
+                      (() => {
+                        const date = parseDateOnly(formData.psv);
+                        return date ? format(date, "PPP") : formData.psv;
+                      })()
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      formData.psv ? parseDateOnly(formData.psv) || undefined : undefined
+                    }
+                    onSelect={(date) => {
+                      if (!date) return;
+                      const value = format(date, "yyyy-MM-dd");
+                      setFormData({ ...formData, psv: value });
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

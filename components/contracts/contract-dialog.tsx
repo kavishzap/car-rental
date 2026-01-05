@@ -77,7 +77,7 @@ export function ContractDialog({
       id: string;
       name: string;
       pricePerDay: number;
-      color?: string | null;
+      brand?: string | null;
       model?: string | null;
       plateNumber?: string;
     }>
@@ -105,8 +105,6 @@ export function ContractDialog({
     customerNicOrPassport: "",
     clientSignatureBase64: "",
 
-    siegeBBAmount: 0,
-    rehausseurAmount: 0,
     fuelAmount: 0,
     preAuthorization: "",
     pickupDate: "",
@@ -119,6 +117,7 @@ export function ContractDialog({
     deliveryAmount: 0,
     cardPaymentPercent: 0,
     cardPaymentAmount: 0,
+    secondDriverId: "",
     secondDriverName: "",
     secondDriverLicense: "",
   });
@@ -148,7 +147,7 @@ export function ContractDialog({
           carsList.map((c) => ({
             id: c.id,
             name: c.name,
-            color: c.color,
+            brand: c.brand,
             model: c.model,
             plateNumber: c.plateNumber,
             pricePerDay: c.pricePerDay,
@@ -167,6 +166,10 @@ export function ContractDialog({
   // Prefill on edit / reset on create
   useEffect(() => {
     if (contract) {
+      const secondDriverName = (contract as any).secondDriverName ?? "";
+      // Try to match second driver by name
+      const matchedSecondDriver = customers.find((c) => c.name === secondDriverName);
+      
       setFormData({
         customerId: contract.customerId,
         carId: contract.carId,
@@ -196,14 +199,13 @@ export function ContractDialog({
         deliveryPlace: contract.deliveryPlace || "",
         paymentMode: (contract as any).paymentMode ?? "",
 
-        siegeBBAmount: (contract as any).siegeBBAmount ?? 0,
-        rehausseurAmount: (contract as any).rehausseurAmount ?? 0,
         simAmount: (contract as any).simAmount ?? 0,
         deliveryAmount: (contract as any).deliveryAmount ?? 0,
         cardPaymentPercent: (contract as any).cardPaymentPercent ?? 0,
         cardPaymentAmount: (contract as any).cardPaymentAmount ?? 0,
 
-        secondDriverName: (contract as any).secondDriverName ?? "",
+        secondDriverId: matchedSecondDriver?.id ?? "",
+        secondDriverName: secondDriverName,
         secondDriverLicense: (contract as any).secondDriverLicense ?? "",
       });
       // In edit mode, we don't enforce disabling existing dates
@@ -232,18 +234,30 @@ export function ContractDialog({
         deliveryTime: "",
         deliveryPlace: "",
         paymentMode: "",
-        siegeBBAmount: 0,
-        rehausseurAmount: 0,
         simAmount: 0,
         deliveryAmount: 0,
         cardPaymentPercent: 0,
         cardPaymentAmount: 0,
+        secondDriverId: "",
         secondDriverName: "",
         secondDriverLicense: "",
       });
       setBookedRanges([]);
     }
   }, [contract, open]);
+
+  // Match second driver by name when customers are loaded (for edit mode)
+  useEffect(() => {
+    if (contract && customers.length > 0 && formData.secondDriverName && !formData.secondDriverId) {
+      const matchedSecondDriver = customers.find((c) => c.name === formData.secondDriverName);
+      if (matchedSecondDriver) {
+        setFormData((prev) => ({
+          ...prev,
+          secondDriverId: matchedSecondDriver.id,
+        }));
+      }
+    }
+  }, [customers, contract, formData.secondDriverName, formData.secondDriverId]);
 
   // 🆕 Load booked dates when creating a new contract & car changes
   // 🆕 Load booked dates when creating a new contract & car changes
@@ -298,8 +312,6 @@ export function ContractDialog({
       simAmount,
       deliveryAmount,
       cardPaymentPercent,
-      siegeBBAmount,
-      rehausseurAmount,
     } = formData;
 
     const valid =
@@ -318,10 +330,6 @@ export function ContractDialog({
 
       const safeSim = Number.isFinite(simAmount) ? simAmount : 0;
       const safeDelivery = Number.isFinite(deliveryAmount) ? deliveryAmount : 0;
-      const safeSiege = Number.isFinite(siegeBBAmount) ? siegeBBAmount : 0;
-      const safeRehausseur = Number.isFinite(rehausseurAmount)
-        ? rehausseurAmount
-        : 0;
       const safePercent = Number.isFinite(cardPaymentPercent)
         ? cardPaymentPercent
         : 0;
@@ -333,8 +341,6 @@ export function ContractDialog({
         baseTotal +
         safeSim +
         safeDelivery +
-        safeSiege +
-        safeRehausseur +
         cardPaymentAmount;
 
       setFormData((prev) => ({
@@ -358,8 +364,6 @@ export function ContractDialog({
     formData.simAmount,
     formData.deliveryAmount,
     formData.cardPaymentPercent,
-    formData.siegeBBAmount,
-    formData.rehausseurAmount,
   ]);
 
   const handleCarChange = (carId: string) => {
@@ -382,6 +386,19 @@ export function ContractDialog({
       customerId,
       licenseNumber: licenseValue ? licenseValue : prev.licenseNumber,
       customerNicOrPassport: nicOrPassportValue ? nicOrPassportValue : prev.customerNicOrPassport,
+    }));
+  };
+
+  const handleSecondDriverChange = (customerId: string) => {
+    const selectedCustomer = customers.find((c) => c.id === customerId);
+    const licenseValue = selectedCustomer?.license?.trim();
+    const customerName = selectedCustomer?.name ?? "";
+
+    setFormData((prev) => ({
+      ...prev,
+      secondDriverId: customerId,
+      secondDriverName: customerName,
+      secondDriverLicense: licenseValue ? licenseValue : prev.secondDriverLicense,
     }));
   };
 
@@ -458,8 +475,6 @@ export function ContractDialog({
         deliveryTime: formData.deliveryTime || "",
         deliveryPlace: formData.deliveryPlace || "",
         paymentMode: formData.paymentMode || "",
-        siegeBBAmount: formData.siegeBBAmount || 0,
-        rehausseurAmount: formData.rehausseurAmount || 0,
         simAmount: formData.simAmount || 0,
         deliveryAmount: formData.deliveryAmount || 0,
         cardPaymentPercent: formData.cardPaymentPercent || 0,
@@ -548,7 +563,7 @@ export function ContractDialog({
                 <SelectContent>
                   {cars.map((c) => {
                     const details = [
-                      c.color,
+                      c.brand,
                       c.model,
                       c.plateNumber,
                     ].filter(Boolean);
@@ -723,7 +738,19 @@ export function ContractDialog({
 
             <div className="space-y-2">
               <Label htmlFor="days">Days</Label>
-              <Input id="days" type="number" value={formData.days} disabled />
+              <Input
+                id="days"
+                type="number"
+                step="1"
+                min="0"
+                value={formData.days}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    days: Number.parseInt(e.target.value) || 0,
+                  })
+                }
+              />
             </div>
 
             <div className="space-y-2">
@@ -802,7 +829,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="simAmount">GPS</Label>
+              <Label htmlFor="simAmount">SIM + Internet</Label>
               <Input
                 id="simAmount"
                 type="number"
@@ -834,35 +861,23 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="siegeBBAmount">Siège BB (amount)</Label>
-              <Input
-                id="siegeBBAmount"
-                type="number"
-                step="0.01"
-                value={formData.siegeBBAmount}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    siegeBBAmount: Number.parseFloat(e.target.value) || 0,
-                  })
+              <Label htmlFor="paymentMode">Payment Mode</Label>
+              <Select
+                value={formData.paymentMode}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, paymentMode: value })
                 }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rehausseurAmount">Rehausseur (amount)</Label>
-              <Input
-                id="rehausseurAmount"
-                type="number"
-                step="0.01"
-                value={formData.rehausseurAmount}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    rehausseurAmount: Number.parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
+              >
+                <SelectTrigger id="paymentMode" className="w-full">
+                  <SelectValue placeholder="Select payment mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -887,17 +902,22 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="secondDriverName">Second driver name</Label>
-              <Input
-                id="secondDriverName"
-                value={formData.secondDriverName}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    secondDriverName: e.target.value,
-                  })
-                }
-              />
+              <Label htmlFor="secondDriverId">Second driver</Label>
+              <Select
+                value={formData.secondDriverId}
+                onValueChange={handleSecondDriverChange}
+              >
+                <SelectTrigger id="secondDriverId" className="w-full">
+                  <SelectValue placeholder="Select second driver" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -911,27 +931,8 @@ export function ContractDialog({
                     secondDriverLicense: e.target.value,
                   })
                 }
+                placeholder="License number"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="paymentMode">Payment Mode</Label>
-              <Select
-                value={formData.paymentMode}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, paymentMode: value })
-                }
-              >
-                <SelectTrigger id="paymentMode" className="w-full">
-                  <SelectValue placeholder="Select payment mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
