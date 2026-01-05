@@ -99,7 +99,7 @@ export function ContractDialog({
     subtotal: 0,
     taxRate: 0,
     total: 0,
-    status: "draft" as "draft" | "completed" | "cancelled",
+    status: "draft" as "draft" | "active" | "completed" | "cancelled",
     notes: "",
     licenseNumber: "",
     customerNicOrPassport: "",
@@ -594,6 +594,7 @@ export function ContractDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
