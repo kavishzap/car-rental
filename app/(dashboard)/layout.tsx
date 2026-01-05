@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { isAuthenticated } from "@/lib/auth"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -14,14 +14,27 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const [isAuth, setIsAuth] = useState<boolean | null>(null)
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push("/login")
+    const checkAuth = async () => {
+      const authed = await isAuthenticated()
+      setIsAuth(authed)
+      if (!authed) {
+        router.push("/login")
+      }
     }
+
+    checkAuth()
   }, [router, pathname])
 
-  if (!isAuthenticated()) {
+  // Show nothing while checking authentication
+  if (isAuth === null) {
+    return null
+  }
+
+  // If not authenticated, don't render (redirect is happening)
+  if (!isAuth) {
     return null
   }
 
