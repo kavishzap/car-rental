@@ -90,6 +90,7 @@ export interface Contract {
 
   pickupDate?: string | null;
   pickupTime?: string | null;
+  pickupPlace?: string | null;
   deliveryDate?: string | null;
   deliveryTime?: string | null;
   deliveryPlace?: string | null;
@@ -130,6 +131,18 @@ export type VehicleRegister = {
   insurancePolicyNo?: string | null;
   insuranceStartDate?: string | null;
   insuranceEndDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ExternalCar = {
+  id: string;
+  name: string;
+  brand?: string | null;
+  model?: string | null;
+  year?: number | null;
+  plateNumber?: string | null;
+  pricePerDay: number;
   createdAt: string;
   updatedAt: string;
 };

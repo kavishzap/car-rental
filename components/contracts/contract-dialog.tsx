@@ -109,6 +109,7 @@ export function ContractDialog({
     preAuthorization: "",
     pickupDate: "",
     pickupTime: "",
+    pickupPlace: "",
     deliveryDate: "",
     deliveryTime: "",
     deliveryPlace: "",
@@ -192,6 +193,7 @@ export function ContractDialog({
           ? (contract as any).pickupDate.split("T")[0]
           : "",
         pickupTime: (contract as any).pickupTime ?? "",
+        pickupPlace: (contract as any).pickupPlace ?? "",
         deliveryDate: (contract as any).deliveryDate
           ? (contract as any).deliveryDate.split("T")[0]
           : "",
@@ -230,6 +232,7 @@ export function ContractDialog({
         preAuthorization: "",
         pickupDate: "",
         pickupTime: "",
+        pickupPlace: "",
         deliveryDate: "",
         deliveryTime: "",
         deliveryPlace: "",
@@ -295,8 +298,8 @@ export function ContractDialog({
       start.setHours(0, 0, 0, 0);
       end.setHours(0, 0, 0, 0);
       const ms = end.getTime() - start.getTime();
-      // Add 1 to make it inclusive (Dec 1 to Dec 8 = 8 days)
-      const diffDays = ms < 0 ? 0 : Math.floor(ms / (1000 * 60 * 60 * 24)) + 1;
+      // Calculate difference in days (Jan 19 to Jan 24 = 5 days)
+      const diffDays = ms < 0 ? 0 : Math.floor(ms / (1000 * 60 * 60 * 24));
       setFormData((prev) => ({ ...prev, days: diffDays }));
     } else {
       setFormData((prev) => ({ ...prev, days: 0 }));
@@ -469,6 +472,7 @@ export function ContractDialog({
           ? new Date(formData.pickupDate).toISOString()
           : null,
         pickupTime: formData.pickupTime || "",
+        pickupPlace: formData.pickupPlace || "",
         deliveryDate: formData.deliveryDate
           ? new Date(formData.deliveryDate).toISOString()
           : null,
@@ -709,6 +713,18 @@ export function ContractDialog({
                 value={formData.pickupTime}
                 onChange={(e) =>
                   setFormData({ ...formData, pickupTime: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pickupPlace">Pickup Place</Label>
+              <Input
+                id="pickupPlace"
+                type="text"
+                value={formData.pickupPlace}
+                onChange={(e) =>
+                  setFormData({ ...formData, pickupPlace: e.target.value })
                 }
               />
             </div>

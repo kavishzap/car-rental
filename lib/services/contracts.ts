@@ -38,6 +38,7 @@ type ContractRow = {
 
   pickup_date: string | null;
   pickup_time: string | null;
+  pickup_place: string | null;
   delivery_date: string | null;
   delivery_time: string | null;
   delivery_place: string | null;
@@ -113,6 +114,7 @@ function mapRowToContract(row: ContractRow): Contract {
     rehausseurAmount: toNum(row.rehausseur_amount), // 👈 NEW
     pickupDate: row.pickup_date ?? undefined,
     pickupTime: row.pickup_time ?? undefined,
+    pickupPlace: row.pickup_place ?? undefined,
     deliveryDate: row.delivery_date ?? undefined,
     deliveryTime: row.delivery_time ?? undefined,
     deliveryPlace: row.delivery_place ?? undefined,
@@ -165,6 +167,7 @@ function payloadToRow(
 
     pickup_date: payload.pickupDate ?? null,
     pickup_time: payload.pickupTime ?? null,
+    pickup_place: payload.pickupPlace ?? null,
     delivery_date: payload.deliveryDate ?? null,
     delivery_time: payload.deliveryTime ?? null,
     delivery_place: payload.deliveryPlace ?? null,
