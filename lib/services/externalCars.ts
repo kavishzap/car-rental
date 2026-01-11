@@ -99,3 +99,4 @@ export async function deleteExternalCar(id: string): Promise<void> {
   if (error) throw error;
 }
 
+

@@ -92,7 +92,10 @@ export function ContractsTable({
   const clampedPage = Math.min(page, totalPages);
   const startIdx = (clampedPage - 1) * pageSize;
   const endIdx = Math.min(startIdx + pageSize, total);
-  const pageItems = useMemo(() => rows.slice(startIdx, endIdx), [rows, startIdx, endIdx]);
+  const pageItems = useMemo(
+    () => rows.slice(startIdx, endIdx),
+    [rows, startIdx, endIdx]
+  );
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -139,7 +142,9 @@ export function ContractsTable({
     ]);
 
     if (!customer || !car || !company) {
-      alert("Unable to generate PDF: missing customer, car, or company details.");
+      alert(
+        "Unable to generate PDF: missing customer, car, or company details."
+      );
       return;
     }
 
@@ -214,8 +219,11 @@ export function ContractsTable({
         {/* Top bar: page size + count */}
         <div className="flex items-center justify-between gap-3 p-3 border-b">
           <div className="text-sm text-muted-foreground">
-            Showing <span className="font-medium">{total === 0 ? 0 : startIdx + 1}</span>–
-            <span className="font-medium">{endIdx}</span> of{" "}
+            Showing{" "}
+            <span className="font-medium">
+              {total === 0 ? 0 : startIdx + 1}
+            </span>
+            –<span className="font-medium">{endIdx}</span> of{" "}
             <span className="font-medium">{total}</span>
           </div>
 
@@ -299,12 +307,10 @@ export function ContractsTable({
                           Show Images
                         </DropdownMenuItem>
 
-                        {!isCompleted && (
-                          <DropdownMenuItem onClick={() => onEdit(contract)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem onClick={() => onEdit(contract)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
 
                         <DropdownMenuItem
                           onClick={() => confirmDelete(contract)}
