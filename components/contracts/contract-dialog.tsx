@@ -337,8 +337,9 @@ export function ContractDialog({
         ? cardPaymentPercent
         : 0;
 
+      // Card payment fee applies to baseTotal + deliveryAmount
       const cardPaymentAmount =
-        safePercent > 0 ? (baseTotal * safePercent) / 100 : 0;
+        safePercent > 0 ? ((baseTotal + safeDelivery) * safePercent) / 100 : 0;
 
       const finalTotal =
         baseTotal +
@@ -478,7 +479,7 @@ export function ContractDialog({
           : null,
         deliveryTime: formData.deliveryTime || "",
         deliveryPlace: formData.deliveryPlace || "",
-        paymentMode: formData.paymentMode || "",
+        paymentMode: (formData.paymentMode || "") as "cash" | "card" | "bank_transfer" | "other" | null,
         simAmount: formData.simAmount || 0,
         deliveryAmount: formData.deliveryAmount || 0,
         cardPaymentPercent: formData.cardPaymentPercent || 0,
@@ -881,9 +882,15 @@ export function ContractDialog({
               <Label htmlFor="paymentMode">Payment Mode</Label>
               <Select
                 value={formData.paymentMode}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, paymentMode: value })
-                }
+                onValueChange={(value) => {
+                  // Automatically apply 5% fee when payment mode is "card"
+                  const cardPaymentPercent = value === "card" ? 5 : 0;
+                  setFormData({ 
+                    ...formData, 
+                    paymentMode: value,
+                    cardPaymentPercent 
+                  });
+                }}
               >
                 <SelectTrigger id="paymentMode" className="w-full">
                   <SelectValue placeholder="Select payment mode" />
@@ -914,6 +921,9 @@ export function ContractDialog({
               {formData.cardPaymentAmount > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Card fee: {formatCurrency(formData.cardPaymentAmount)}
+                  <span className="block mt-0.5 text-[10px]">
+                    (applied to subtotal + delivery amount)
+                  </span>
                 </p>
               )}
             </div>
