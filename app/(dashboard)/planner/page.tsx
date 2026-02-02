@@ -163,11 +163,42 @@ export default function ContractsPlannerPage() {
     });
   }, [events, selectedCarId]);
 
+  // Generate a consistent color for each contract
+  const getContractColor = (contractId: string): string => {
+    // Predefined palette of distinct colors
+    const colors = [
+      "#3b82f6", // blue
+      "#10b981", // green
+      "#f59e0b", // amber
+      "#ef4444", // red
+      "#8b5cf6", // purple
+      "#ec4899", // pink
+      "#06b6d4", // cyan
+      "#84cc16", // lime
+      "#f97316", // orange
+      "#6366f1", // indigo
+      "#14b8a6", // teal
+      "#a855f7", // violet
+      "#22c55e", // emerald
+      "#eab308", // yellow
+      "#3b82f6", // blue (repeat for more contracts)
+    ];
+
+    // Hash the contract ID to get a consistent index
+    let hash = 0;
+    for (let i = 0; i < contractId.length; i++) {
+      hash = contractId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
   // Event styling
   const eventPropGetter = (event: PlannerEvent) => {
+    const backgroundColor = getContractColor(event.contractId);
     return {
       style: {
-        backgroundColor: "#3b82f6",
+        backgroundColor,
         borderRadius: "6px",
         border: "none",
         color: "white",

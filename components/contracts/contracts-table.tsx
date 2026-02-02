@@ -65,6 +65,7 @@ const statusColors: Record<
 type Enriched = Contract & {
   customerName?: string;
   carName?: string;
+  carPlateNumber?: string;
   licenseNumber?: string;
   clientSignatureBase64?: string;
   ownerSignatureBase64?: string;
@@ -119,6 +120,7 @@ export function ContractsTable({
                 ? `${customer.firstName} ${customer.lastName}`
                 : "Unknown",
               carName: car?.name ?? "Unknown",
+              carPlateNumber: car?.plateNumber ?? "",
             } as Enriched;
           })
         );
@@ -274,7 +276,14 @@ export function ContractsTable({
                     {contract.contractNumber}
                   </TableCell>
                   <TableCell>{contract.customerName}</TableCell>
-                  <TableCell>{contract.carName}</TableCell>
+                  <TableCell>
+                    {contract.carName}
+                    {contract.carPlateNumber && (
+                      <span className="text-muted-foreground ml-2">
+                        ({contract.carPlateNumber})
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{formatDate(contract.startDate)}</TableCell>
                   <TableCell>{formatDate(contract.endDate)}</TableCell>
                   <TableCell>{contract.days}</TableCell>

@@ -707,7 +707,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pickupTime">Pickup Time</Label>
+              <Label htmlFor="pickupTime">Delivery Time</Label>
               <Input
                 id="pickupTime"
                 type="time"
@@ -719,7 +719,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pickupPlace">Pickup Place</Label>
+              <Label htmlFor="pickupPlace">Delivery Place</Label>
               <Input
                 id="pickupPlace"
                 type="text"
@@ -731,7 +731,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deliveryTime">Delivery Time</Label>
+              <Label htmlFor="deliveryTime">Recovery Time</Label>
               <Input
                 id="deliveryTime"
                 type="time"
@@ -743,10 +743,10 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deliveryPlace">Delivery Place</Label>
+              <Label htmlFor="deliveryPlace">Recovery Place</Label>
               <Input
                 id="deliveryPlace"
-                placeholder="Delivery location"
+                placeholder="Recovery location"
                 value={formData.deliveryPlace}
                 onChange={(e) =>
                   setFormData({ ...formData, deliveryPlace: e.target.value })
@@ -929,43 +929,6 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="secondDriverId">Second driver</Label>
-              <Select
-                value={formData.secondDriverId}
-                onValueChange={handleSecondDriverChange}
-              >
-                <SelectTrigger id="secondDriverId" className="w-full">
-                  <SelectValue placeholder="Select second driver" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="secondDriverLicense">Second driver license</Label>
-              <Input
-                id="secondDriverLicense"
-                value={formData.secondDriverLicense}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    secondDriverLicense: e.target.value,
-                  })
-                }
-                placeholder="License number"
-              />
-            </div>
-          </div>
-
-          {/* Payment + extras */}
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            <div className="space-y-2">
               <Label htmlFor="total">Total (incl. extras)</Label>
               <Input
                 id="total"
@@ -973,6 +936,10 @@ export function ContractDialog({
                 disabled
               />
             </div>
+          </div>
+
+          {/* Payment + extras */}
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
 
             <div className="space-y-2 md:col-span-1 xl:col-span-2">
               <Label htmlFor="notes">Notes</Label>

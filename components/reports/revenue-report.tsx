@@ -17,6 +17,7 @@ type RevenueReportProps = {
 type RevenueRow = Contract & {
   customerName: string;
   carName: string;
+  carPlateNumber?: string;
 };
 
 export function RevenueReport({ dateRange }: RevenueReportProps) {
@@ -56,6 +57,7 @@ export function RevenueReport({ dateRange }: RevenueReportProps) {
                 ...contract,
                 customerName: customer ? `${customer.firstName} ${customer.lastName}` : "Unknown",
                 carName: car?.name ?? "Unknown",
+                carPlateNumber: car?.plateNumber ?? "",
               };
             })
         );
@@ -111,7 +113,14 @@ export function RevenueReport({ dateRange }: RevenueReportProps) {
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.contractNumber}</TableCell>
                     <TableCell>{c.customerName}</TableCell>
-                    <TableCell>{c.carName}</TableCell>
+                    <TableCell>
+                      {c.carName}
+                      {c.carPlateNumber && (
+                        <span className="text-muted-foreground ml-2">
+                          ({c.carPlateNumber})
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{formatDate(c.startDate)}</TableCell>
                     <TableCell>{c.days}</TableCell>
                     <TableCell className="font-medium">{formatCurrency(c.total)}</TableCell>

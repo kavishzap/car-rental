@@ -323,7 +323,7 @@ export async function buildContractHtml({
 
   if (contract.pickupTime || contract.deliveryTime) {
     doc.text(
-      `Pickup time: ${contract.pickupTime ?? "-"} | Delivery time: ${
+      `Delivery Time: ${contract.pickupTime ?? "-"} | Recovery Time: ${
         contract.deliveryTime ?? "-"
       }`,
       col1X,
