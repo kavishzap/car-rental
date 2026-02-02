@@ -413,54 +413,45 @@ export async function buildContractHtml({
   doc.setFontSize(10);
   doc.text("(Name & Sign)", col1X, signatureLineY + 16);
 
-  // ---------- TERMS & CONDITIONS: TWO-COLUMN (NO OVERLAP) ----------
+  // ---------- TERMS & CONDITIONS: SINGLE COLUMN (FULL WIDTH) ----------
   doc.addPage();
+
+  // Use very minimal margins for terms section to use maximum page width
+  const TERMS_MARGIN_LEFT = 10;
+  const TERMS_MARGIN_RIGHT = 10;
+  // Use almost the entire page width (PAGE_WIDTH minus minimal margins)
+  const TERMS_CONTENT_WIDTH = PAGE_WIDTH - TERMS_MARGIN_LEFT - TERMS_MARGIN_RIGHT;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
 
   let termsY = TOP_MARGIN;
-  doc.text("Rental Terms & Conditions", MARGIN_LEFT, termsY);
+  doc.text("Rental Terms & Conditions", TERMS_MARGIN_LEFT, termsY);
 
   termsY += 20;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
+  doc.setFontSize(10);
 
-  // Split text once
+  // Get terms text
   const termsText = company.terms ?? "";
 
-  // Layout constants
-  const TWO_COL = true;
-
-  let colX = MARGIN_LEFT;
   let yPos = termsY;
 
-  // Split text into lines based on column width
-  const wrappedLines = doc.splitTextToSize(termsText, COLUMN_WIDTH);
-
-  // Column index: 1 = left, 2 = right
-  let col = 1;
+  // Split text into lines using the full available width
+  // This ensures text wraps at the maximum width possible
+  const wrappedLines = doc.splitTextToSize(termsText, TERMS_CONTENT_WIDTH);
 
   // SAFELY PRINT LINE FUNCTION
   const printLine = (line: string) => {
-    // If we are at bottom → switch column OR new page
+    // If we are at bottom → new page
     if (yPos > PAGE_HEIGHT - BOTTOM_MARGIN) {
-      if (col === 1 && TWO_COL) {
-        // SWITCH TO RIGHT COLUMN
-        col = 2;
-        colX = MARGIN_LEFT + COLUMN_WIDTH + COLUMN_GUTTER;
-        yPos = TOP_MARGIN;
-      } else {
-        // NEW PAGE, RESET
-        doc.addPage();
-        col = 1;
-        colX = MARGIN_LEFT;
-        yPos = TOP_MARGIN;
-      }
+      doc.addPage();
+      yPos = TOP_MARGIN;
     }
 
-    doc.text(line, colX, yPos);
+    // Print each line at the left margin position
+    doc.text(line, TERMS_MARGIN_LEFT, yPos);
     yPos += 12;
   };
 
