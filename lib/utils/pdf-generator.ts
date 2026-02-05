@@ -19,6 +19,8 @@ type Customer = {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  city?: string | null;
+  country?: string | null;
 };
 
 type Car = {
@@ -67,8 +69,10 @@ export async function buildContractHtml({
 
   let y = TOP_MARGIN;
 
-  const formatMoney = (v: number | null | undefined) =>
-    (v ?? 0).toFixed(2) + " MUR";
+  const formatMoney = (v: number | null | undefined) => {
+    const value = Math.round(v ?? 0);
+    return value.toString() + " MUR";
+  };
 
   const fullCustomerName = `${customer.firstName ?? ""} ${
     customer.lastName ?? ""
@@ -231,11 +235,28 @@ export async function buildContractHtml({
     leftY += 12;
   }
 
+  if (customer.city) {
+    doc.text(`City: ${customer.city}`, col1X, leftY);
+    leftY += 12;
+  }
+
+  if (customer.country) {
+    doc.text(`Country: ${customer.country}`, col1X, leftY);
+    leftY += 12;
+  }
+
   // Right: License + Second Driver
   if (contract.licenseNumber) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text(`License No: ${contract.licenseNumber}`, col2X, rightY);
+    rightY += 14;
+  }
+
+  if (contract.customerNicOrPassport) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`NIC/Passport: ${contract.customerNicOrPassport}`, col2X, rightY);
     rightY += 14;
   }
 

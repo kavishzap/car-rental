@@ -337,9 +337,9 @@ export function ContractDialog({
         ? cardPaymentPercent
         : 0;
 
-      // Card payment fee applies to baseTotal + deliveryAmount
+      // Card payment fee applies to baseTotal + deliveryAmount + simAmount
       const cardPaymentAmount =
-        safePercent > 0 ? ((baseTotal + safeDelivery) * safePercent) / 100 : 0;
+        safePercent > 0 ? ((baseTotal + safeDelivery + safeSim) * safePercent) / 100 : 0;
 
       const finalTotal =
         baseTotal +
@@ -922,7 +922,7 @@ export function ContractDialog({
                 <p className="text-xs text-muted-foreground mt-1">
                   Card fee: {formatCurrency(formData.cardPaymentAmount)}
                   <span className="block mt-0.5 text-[10px]">
-                    (applied to subtotal + delivery amount)
+                    (applied to subtotal + delivery amount + SIM + Internet)
                   </span>
                 </p>
               )}
