@@ -367,6 +367,25 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
                 </PopoverContent>
               </Popover>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value: "available" | "maintenance" | "unavailable") =>
+                  setFormData({ ...formData, status: value })
+                }
+              >
+                <SelectTrigger id="status" className="w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="available">Available</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="unavailable">Unavailable</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2 md:col-span-2">

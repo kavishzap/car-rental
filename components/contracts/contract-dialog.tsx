@@ -80,6 +80,7 @@ export function ContractDialog({
       brand?: string | null;
       model?: string | null;
       plateNumber?: string;
+      status?: "available" | "maintenance" | "unavailable";
     }>
   >([]);
   const [submitting, setSubmitting] = useState(false);
@@ -152,6 +153,7 @@ export function ContractDialog({
             model: c.model,
             plateNumber: c.plateNumber,
             pricePerDay: c.pricePerDay,
+            status: c.status,
           }))
         );
       } catch (err: any) {
@@ -572,11 +574,15 @@ export function ContractDialog({
                       c.model,
                       c.plateNumber,
                     ].filter(Boolean);
-                    const label = details.length
+                    const baseLabel = details.length
                       ? `${c.name} • ${details.join(" • ")}`
                       : c.name;
+                    // Disable cars that are not available, unless it's the currently selected car in edit mode
+                    const isDisabled = c.status !== "available" && (!isEditMode || c.id !== formData.carId);
+                    const statusLabel = c.status && c.status !== "available" ? ` (${c.status})` : "";
+                    const label = `${baseLabel}${statusLabel}`;
                     return (
-                      <SelectItem key={c.id} value={c.id}>
+                      <SelectItem key={c.id} value={c.id} disabled={isDisabled}>
                         {label}
                       </SelectItem>
                     );
