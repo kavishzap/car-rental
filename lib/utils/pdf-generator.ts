@@ -498,6 +498,34 @@ export async function buildContractHtml({
   // PRINT ALL LINES SAFELY
   wrappedLines.forEach(printLine);
 
+  // ---------- ADD FOOTER TO ALL PAGES ----------
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    
+    // Footer line - positioned higher to ensure visibility
+    const footerY = PAGE_HEIGHT - 50;
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(200);
+    doc.line(MARGIN_LEFT, footerY, PAGE_WIDTH - MARGIN_RIGHT, footerY);
+    
+    // Footer text
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    
+    const footerText = [
+      company.name,
+      `Tel: ${company.tel} | WhatsApp: ${company.whatsapp_num}`,
+      `Email: ${company.email} | BRN: ${company.brn}`
+    ];
+    
+    let footerYPos = footerY + 12;
+    footerText.forEach((line) => {
+      doc.text(line, MARGIN_LEFT, footerYPos);
+      footerYPos += 10;
+    });
+  }
+
   // ---------- SAVE ----------
   const fileName = `Contract-${contract.contractNumber || contract.id}.pdf`;
   doc.save(fileName);
