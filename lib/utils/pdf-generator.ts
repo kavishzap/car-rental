@@ -81,8 +81,8 @@ export async function buildContractHtml({
   const chargesRowsLeft = [
     { label: "Daily rate", value: formatMoney(contract.dailyRate) },
     {
-      label: "Days / Subtotal (rental)",
-      value: `${contract.days}  Subtotal: ${formatMoney(contract.subtotal)}`,
+      label: "Days (rental)",
+      value: `${contract.days}`,
     },
   ];
 
@@ -93,8 +93,7 @@ export async function buildContractHtml({
       label: `Card fee (${contract.cardPaymentPercent ?? 0}%)`,
       value: formatMoney(contract.cardPaymentAmount ?? 0),
     },
-    { label: "Tax rate", value: `${contract.taxRate ?? 0}%` },
-    { label: "Total", value: formatMoney(contract.total) },
+    { label: "Total", value: formatMoney(contract.total), isBold: true },
   ];
 
   const notesSnippet = contract.notes
@@ -235,17 +234,21 @@ export async function buildContractHtml({
     leftY += 12;
   }
 
+  // Right: City, Country, License + Second Driver
   if (customer.city) {
-    doc.text(`City: ${customer.city}`, col1X, leftY);
-    leftY += 12;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`City: ${customer.city}`, col2X, rightY);
+    rightY += 14;
   }
 
   if (customer.country) {
-    doc.text(`Country: ${customer.country}`, col1X, leftY);
-    leftY += 12;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Country: ${customer.country}`, col2X, rightY);
+    rightY += 14;
   }
 
-  // Right: License + Second Driver
   if (contract.licenseNumber) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
@@ -280,10 +283,11 @@ export async function buildContractHtml({
 
   y = Math.max(leftY, rightY) + 18;
 
-  // ---------- VEHICLE DETAILS (LEFT) ----------
+  // ---------- VEHICLE DETAILS (LEFT) + RENTAL PERIOD (RIGHT) ----------
   leftY = y;
   rightY = y;
 
+  // Left: Vehicle Details
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text("Vehicle Details", col1X, leftY);
@@ -312,59 +316,74 @@ export async function buildContractHtml({
     }
   }
 
-  y = Math.max(leftY, rightY) + 18;
-
-  // ---------- RENTAL PERIOD + CHARGES SUMMARY (2 COL) ----------
-  leftY = y;
-  rightY = y;
-
-  // Left title
+  // Right: Rental Period
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.text("Rental Period", col1X, leftY);
-
-  // Right title
-  doc.text("Charges Summary", col2X, rightY);
-
-  leftY += 14;
+  doc.text("Rental Period", col2X, rightY);
   rightY += 14;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-
-  // Left column: period details
   doc.text(
     `Start: ${contract.startDate?.slice(0, 10) ?? ""} | End: ${
       contract.endDate?.slice(0, 10) ?? ""
     } | Days: ${contract.days}`,
-    col1X,
-    leftY
+    col2X,
+    rightY
   );
-  leftY += 12;
+  rightY += 12;
 
   if (contract.pickupTime || contract.deliveryTime) {
     doc.text(
       `Delivery Time: ${contract.pickupTime ?? "-"} | Recovery Time: ${
         contract.deliveryTime ?? "-"
       }`,
-      col1X,
-      leftY
+      col2X,
+      rightY
     );
-    leftY += 12;
+    rightY += 12;
+  }
+
+  if (contract.pickupPlace) {
+    doc.text(`Delivery Place: ${contract.pickupPlace}`, col2X, rightY);
+    rightY += 12;
+  }
+
+  if (contract.deliveryPlace) {
+    doc.text(`Recovery Place: ${contract.deliveryPlace}`, col2X, rightY);
+    rightY += 12;
   }
 
   if (contract.fuelAmount != null) {
-    doc.text(`Fuel level (bars): ${contract.fuelAmount}`, col1X, leftY);
-    leftY += 12;
+    doc.text(`Fuel level (bars): ${contract.fuelAmount}`, col2X, rightY);
+    rightY += 12;
   }
 
   if (contract.preAuthorization) {
-    doc.text(`Pre-authorization: ${contract.preAuthorization}`, col1X, leftY);
-    leftY += 12;
+    doc.text(`Pre-authorization: ${contract.preAuthorization}`, col2X, rightY);
+    rightY += 12;
   }
+
+  y = Math.max(leftY, rightY) + 18;
+
+  // ---------- CHARGES SUMMARY (2 COL) ----------
+  leftY = y;
+  rightY = y;
+
+  // Right title
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Charges Summary", col2X, rightY);
+
+  rightY += 14;
 
   // Right column: charges
   chargesRowsRight.forEach((row) => {
+    if (row.isBold) {
+      doc.setFont("helvetica", "bold");
+    } else {
+      doc.setFont("helvetica", "normal");
+    }
     doc.text(`${row.label}: ${row.value}`, col2X, rightY);
     rightY += 12;
   });
