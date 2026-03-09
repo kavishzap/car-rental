@@ -59,7 +59,7 @@ export default function ReportsPage() {
           .filter((c) => c.status === "active" || c.status === "completed")
           .reduce((sum, c) => sum + (c.total ?? 0), 0);
 
-        const totalContracts = filteredContracts.length;
+        const totalContracts = contracts.length; // Total in DB, irrespective of status or date
         const averageContractValue = totalContracts > 0 ? totalRevenue / totalContracts : 0;
 
         const totalCars = cars.length;

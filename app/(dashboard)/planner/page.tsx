@@ -210,6 +210,10 @@ export default function ContractsPlannerPage() {
   const selectedCar = selectedEvent
     ? cars.find((c) => c.id === selectedEvent.carId)
     : undefined;
+
+  const selectedContract = selectedEvent
+    ? contracts.find((c) => c.id === selectedEvent.contractId)
+    : undefined;
   
   const [selectedCustomer, setSelectedCustomer] = useState<{ email: string; phone: string } | null>(null);
 
@@ -337,10 +341,10 @@ export default function ContractsPlannerPage() {
                       <span className="text-sm">{selectedCar.model}</span>
                     </div>
                   )}
-                  {selectedCar?.pricePerDay && (
+                  {(selectedContract?.dailyRate != null) && (
                     <div className="flex flex-col">
                       <span className="text-xs text-muted-foreground font-medium">Rate per Day</span>
-                      <span className="text-sm font-medium">{selectedCar.pricePerDay} MUR</span>
+                      <span className="text-sm font-medium">{selectedContract.dailyRate} MUR</span>
                     </div>
                   )}
                 </div>
@@ -399,6 +403,22 @@ export default function ContractsPlannerPage() {
                   <span className="text-sm font-medium">
                     {selectedEvent && format(selectedEvent.end as Date, "PPP")}
                   </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground font-medium">Delivery Place</span>
+                  <span className="text-sm">{selectedContract?.pickupPlace ?? "-"}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground font-medium">Delivery Time</span>
+                  <span className="text-sm">{selectedContract?.pickupTime ?? "-"}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground font-medium">Recovery Place</span>
+                  <span className="text-sm">{selectedContract?.deliveryPlace ?? "-"}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground font-medium">Recovery Time</span>
+                  <span className="text-sm">{selectedContract?.deliveryTime ?? "-"}</span>
                 </div>
               </div>
             </div>

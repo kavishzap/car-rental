@@ -388,6 +388,20 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
+              placeholder="Additional notes about this car..."
+              rows={3}
+              className="resize-none"
+            />
+          </div>
+
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="image">Car Image</Label>
             <div className="flex items-center gap-4">

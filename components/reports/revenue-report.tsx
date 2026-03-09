@@ -79,7 +79,7 @@ export function RevenueReport({ dateRange }: RevenueReportProps) {
       <Card>
         <CardHeader>
           <CardTitle>Revenue Breakdown</CardTitle>
-          <CardDescription>Detailed revenue from all contracts in the selected period</CardDescription>
+          <CardDescription>Showing contracts from the last {dateRange} days (active and completed only)</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
