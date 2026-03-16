@@ -129,9 +129,11 @@ export default function ContractsPlannerPage() {
   const getCustomerName = (id: string) =>
     customers.find((c) => c.id === id)?.name ?? "Unknown customer";
 
-  // Build calendar events
+  // Build calendar events (exclude cancelled contracts)
   const events: PlannerEvent[] = useMemo(() => {
-    return contracts.map((c) => {
+    return contracts
+      .filter((c) => c.status !== "cancelled")
+      .map((c) => {
       const start = new Date(c.startDate);
       const end = new Date(c.endDate);
       // react-big-calendar treats end as exclusive, so +1 day for all-day style
