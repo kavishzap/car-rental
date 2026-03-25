@@ -39,18 +39,26 @@ export function RecentContractsTable({ contracts }: RecentContractsTableProps) {
     async function enrich() {
       const enriched = await Promise.all(
         contracts.map(async (contract) => {
-          const [customer, car] = await Promise.all([
-            getCustomerById(contract.customerId),
-            getCarById(contract.carId),
-          ]);
+          try {
+            const [customer, car] = await Promise.all([
+              getCustomerById(contract.customerId),
+              getCarById(contract.carId),
+            ]);
 
-          return {
-            ...contract,
-            customerName: customer
-              ? `${customer.firstName} ${customer.lastName}`
-              : "Unknown",
-            carName: car?.name || "Unknown",
-          };
+            return {
+              ...contract,
+              customerName: customer
+                ? `${customer.firstName} ${customer.lastName}`
+                : "Unknown",
+              carName: car?.name || "No car",
+            };
+          } catch {
+            return {
+              ...contract,
+              customerName: "Unknown",
+              carName: "No car",
+            };
+          }
         })
       );
 

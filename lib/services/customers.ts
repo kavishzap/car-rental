@@ -43,6 +43,8 @@ export async function getCustomers(): Promise<Customer[]> {
 }
 
 export async function getCustomerById(id: string): Promise<Customer | null> {
+  if (id == null || String(id).trim() === "") return null;
+
   const { data, error } = await supabase
     .from("customers")
     .select("*")

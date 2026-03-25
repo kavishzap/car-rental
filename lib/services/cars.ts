@@ -48,6 +48,8 @@ export async function getCars(): Promise<Car[]> {
 }
 
 export async function getCarById(id: string): Promise<Car | null> {
+  if (id == null || String(id).trim() === "") return null;
+
   const { data, error } = await supabase
     .from("cars")
     .select("*")

@@ -109,19 +109,28 @@ export function ContractsTable({
       try {
         const enriched = await Promise.all(
           inputContracts.map(async (contract) => {
-            const [customer, car] = await Promise.all([
-              getCustomerById(contract.customerId),
-              getCarById(contract.carId),
-            ]);
+            try {
+              const [customer, car] = await Promise.all([
+                getCustomerById(contract.customerId),
+                getCarById(contract.carId),
+              ]);
 
-            return {
-              ...contract,
-              customerName: customer
-                ? `${customer.firstName} ${customer.lastName}`
-                : "Unknown",
-              carName: car?.name ?? "Unknown",
-              carPlateNumber: car?.plateNumber ?? "",
-            } as Enriched;
+              return {
+                ...contract,
+                customerName: customer
+                  ? `${customer.firstName} ${customer.lastName}`
+                  : "Unknown",
+                carName: car?.name ?? "No car",
+                carPlateNumber: car?.plateNumber ?? "",
+              } as Enriched;
+            } catch {
+              return {
+                ...contract,
+                customerName: "Unknown",
+                carName: "No car",
+                carPlateNumber: "",
+              } as Enriched;
+            }
           })
         );
         if (!cancelled) setRows(enriched);
@@ -143,10 +152,21 @@ export function ContractsTable({
       getCompanyDetails(), // 👈 pulls the single row you showed
     ]);
 
-    if (!customer || !car || !company) {
-      alert(
-        "Unable to generate PDF: missing customer, car, or company details."
-      );
+    if (!customer || !company) {
+      await Swal.fire({
+        title: "Unable to generate PDF",
+        text: "Missing customer or company details.",
+        icon: "error",
+      });
+      return;
+    }
+
+    if (!car) {
+      await Swal.fire({
+        title: "Unable to generate PDF",
+        text: "This contract has no vehicle assigned. Assign a car first, then try again.",
+        icon: "error",
+      });
       return;
     }
 

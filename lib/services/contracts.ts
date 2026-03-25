@@ -15,8 +15,8 @@ type ContractRow = {
   id: string;
   contract_number: string;
 
-  customer_id: string;
-  car_id: string;
+  customer_id: string | null;
+  car_id: string | null;
 
   start_date: string;
   end_date: string;
@@ -87,8 +87,8 @@ function mapRowToContract(row: ContractRow): Contract {
     id: row.id,
     contractNumber: row.contract_number,
 
-    customerId: row.customer_id,
-    carId: row.car_id,
+    customerId: row.customer_id ?? "",
+    carId: row.car_id ?? "",
 
     startDate: row.start_date,
     endDate: row.end_date,
@@ -143,7 +143,14 @@ function payloadToRow(
   return {
 
     customer_id: payload.customerId,
-    car_id: payload.carId,
+    ...(payload.carId !== undefined
+      ? {
+          car_id:
+            payload.carId != null && String(payload.carId).trim() !== ""
+              ? payload.carId
+              : null,
+        }
+      : {}),
 
     start_date: payload.startDate,
     end_date: payload.endDate,

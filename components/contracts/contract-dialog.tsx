@@ -373,6 +373,10 @@ export function ContractDialog({
   ]);
 
   const handleCarChange = (carId: string) => {
+    if (carId === "__none__") {
+      setFormData((prev) => ({ ...prev, carId: "", dailyRate: 0 }));
+      return;
+    }
     const selectedCar = cars.find((c) => c.id === carId);
     setFormData((prev) => ({
       ...prev,
@@ -411,15 +415,15 @@ export function ContractDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.customerId || !formData.carId) {
+    if (!formData.customerId) {
       toast({
         title: "Error",
-        description: "Please select both a customer and a car.",
+        description: "Please select a customer.",
         variant: "destructive",
       });
       return;
     }
-    if (!isEditMode && formData.startDate && formData.endDate) {
+    if (!isEditMode && formData.carId && formData.startDate && formData.endDate) {
       const newStart = parseDateOnly(formData.startDate);
       const newEnd = parseDateOnly(formData.endDate);
 
@@ -454,7 +458,7 @@ export function ContractDialog({
 
       const base = {
         customerId: formData.customerId,
-        carId: formData.carId,
+        carId: formData.carId.trim() !== "" ? formData.carId : "",
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         dailyRate: formData.dailyRate,
@@ -563,11 +567,15 @@ export function ContractDialog({
 
             <div className="space-y-2">
               <Label htmlFor="carId">Car</Label>
-              <Select value={formData.carId} onValueChange={handleCarChange}>
+              <Select
+                value={formData.carId || "__none__"}
+                onValueChange={handleCarChange}
+              >
                 <SelectTrigger id="carId" className="w-full">
                   <SelectValue placeholder="Select car" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">No vehicle</SelectItem>
                   {cars.map((c) => {
                     const details = [
                       c.brand,
