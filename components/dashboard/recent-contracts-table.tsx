@@ -21,11 +21,11 @@ type RecentContractsTableProps = {
 
 const statusColors: Record<
   string,
-  "default" | "secondary" | "destructive" | "outline"
+  "default" | "secondary" | "destructive" | "outline" | "success" | "warning"
 > = {
   active: "default",
-  completed: "secondary",
-  draft: "outline",
+  completed: "success",
+  draft: "warning",
   cancelled: "destructive",
   overdue: "destructive",
 };

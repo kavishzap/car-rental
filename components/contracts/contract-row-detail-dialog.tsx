@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { getContractById, updateContract } from "@/lib/services/contracts";
 import { getCustomerById } from "@/lib/services/customers";
 import type { Contract, ContractStatus, Customer } from "@/lib/types";
@@ -38,6 +39,17 @@ type EnrichedRow = Contract & {
   customerName?: string;
   carName?: string;
   carPlateNumber?: string;
+};
+
+const statusBadgeVariant: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline" | "success" | "warning"
+> = {
+  active: "default",
+  completed: "success",
+  draft: "warning",
+  cancelled: "destructive",
+  overdue: "destructive",
 };
 
 type ContractRowDetailDialogProps = {
@@ -340,7 +352,9 @@ export function ContractRowDetailDialog({
                 <FieldBlock label="Daily rate">{formatCurrency(contract.dailyRate)}</FieldBlock>
                 <FieldBlock label="Total">{formatCurrency(contract.total)}</FieldBlock>
                 <FieldBlock label="Status">
-                  <span className="capitalize">{contract.status}</span>
+                  <Badge variant={statusBadgeVariant[contract.status] ?? "outline"} className="capitalize">
+                    {contract.status}
+                  </Badge>
                 </FieldBlock>
               </div>
 

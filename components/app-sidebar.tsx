@@ -12,6 +12,7 @@ import {
   LogOut,
   BriefcaseBusiness,
   Calendar,
+  CalendarRange,
   FileText,
   Menu,
   ChevronLeft,
@@ -33,6 +34,7 @@ const navigation = [
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Contracts", href: "/contracts", icon: FileSignature },
   { name: "Planner", href: "/planner", icon: Calendar },
+  { name: "Planner 2", href: "/planner-2", icon: CalendarRange },
   { name: "Vehicle Registration", href: "/vehicle-registration", icon: FileText },
   { name: "Company", href: "/company", icon: BriefcaseBusiness },
 ];
