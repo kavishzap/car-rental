@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   MoreHorizontal, Pencil, Trash2,
@@ -22,12 +21,6 @@ type CarsTableProps = {
   cars: Car[];
   onEdit: (car: Car) => void;
   onDelete: (car: Car) => void;
-};
-
-const statusColors: Record<string, "default" | "secondary" | "destructive"> = {
-  available: "default",
-  maintenance: "secondary",
-  unavailable: "destructive",
 };
 
 export function CarsTable({ cars, onEdit, onDelete }: CarsTableProps) {
@@ -126,41 +119,24 @@ export function CarsTable({ cars, onEdit, onDelete }: CarsTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Photo</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Color</TableHead>
             <TableHead>Model</TableHead>
             <TableHead>Year</TableHead>
             <TableHead>Plate Number</TableHead>
             <TableHead>Price/Day</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {pageItems.map((car) => (
             <TableRow key={car.id}>
-              <TableCell>
-                {car.imageBase64 ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={car.imageBase64}
-                    alt={car.name}
-                    className="h-10 w-16 object-cover rounded border"
-                  />
-                ) : (
-                  <div className="h-10 w-16 rounded border bg-muted" />
-                )}
-              </TableCell>
               <TableCell className="font-medium">{car.name}</TableCell>
               <TableCell>{car.brand}</TableCell>
               <TableCell>{car.model}</TableCell>
               <TableCell>{car.year}</TableCell>
               <TableCell>{car.plateNumber}</TableCell>
               <TableCell>{formatCurrency(car.pricePerDay)}</TableCell>
-              <TableCell>
-                <Badge variant={statusColors[car.status]}>{car.status}</Badge>
-              </TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

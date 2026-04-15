@@ -43,12 +43,14 @@ import { getCompanyDetails } from "@/lib/services/company"; // 👈 NEW
 import { buildContractHtml } from "@/lib/utils/pdf-generator"; // 👈 now used
 import type { Contract } from "@/lib/types";
 import { ContractImagesDialog } from "@/components/contracts/contract-images-dialog";
+import { ContractRowDetailDialog } from "@/components/contracts/contract-row-detail-dialog";
 import Swal from "sweetalert2";
 
 type ContractsTableProps = {
   contracts: Contract[];
   onEdit: (contract: Contract) => void;
   onDelete: (contract: Contract) => void | Promise<void>;
+  onRefresh?: () => void | Promise<void>;
 };
 
 const statusColors: Record<
@@ -75,12 +77,15 @@ export function ContractsTable({
   contracts,
   onEdit,
   onDelete,
+  onRefresh,
 }: ContractsTableProps) {
   const [rows, setRows] = useState<Enriched[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [imagesOpen, setImagesOpen] = useState(false);
   const [imagesContractId, setImagesContractId] = useState<string | null>(null);
+
+  const [detailRow, setDetailRow] = useState<Enriched | null>(null);
 
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
@@ -289,9 +294,12 @@ export function ContractsTable({
 
           <TableBody>
             {pageItems.map((contract) => {
-              const isCompleted = contract.status === "completed";
               return (
-                <TableRow key={contract.id}>
+                <TableRow
+                  key={contract.id}
+                  className="cursor-pointer hover:bg-muted/60"
+                  onClick={() => setDetailRow(contract)}
+                >
                   <TableCell className="font-medium">
                     {contract.contractNumber}
                   </TableCell>
@@ -314,10 +322,10 @@ export function ContractsTable({
                     </Badge>
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" aria-label="Open row menu">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -414,6 +422,15 @@ export function ContractsTable({
           }}
         />
       )}
+
+      <ContractRowDetailDialog
+        open={detailRow != null}
+        row={detailRow}
+        onClose={() => setDetailRow(null)}
+        onSaved={() => {
+          void onRefresh?.();
+        }}
+      />
     </>
   );
 }

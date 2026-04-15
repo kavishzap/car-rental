@@ -24,6 +24,8 @@ type ContractRow = {
   daily_rate: string | number | null;
   days: number;
 
+  inclusive_exclusive: boolean | null;
+
   subtotal: string | number | null;
   tax_rate: string | number | null;
   total: string | number | null;
@@ -96,6 +98,8 @@ function mapRowToContract(row: ContractRow): Contract {
     dailyRate: toNum(row.daily_rate),
     days: row.days,
 
+    inclusiveExclusive: Boolean(row.inclusive_exclusive),
+
     subtotal: toNum(row.subtotal),
     taxRate: toNum(row.tax_rate),
     total: toNum(row.total),
@@ -157,6 +161,9 @@ function payloadToRow(
 
     daily_rate: payload.dailyRate !== undefined ? payload.dailyRate : undefined,
     days: payload.days !== undefined ? payload.days : undefined,
+
+    inclusive_exclusive:
+      payload.inclusiveExclusive !== undefined ? payload.inclusiveExclusive : undefined,
 
     subtotal: payload.subtotal !== undefined ? payload.subtotal : undefined,
     tax_rate: payload.taxRate !== undefined ? payload.taxRate : undefined,

@@ -4,10 +4,6 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
 import { getContracts } from "@/lib/services/contracts";
 import { getCars } from "@/lib/services/cars";
 import { getCustomers } from "@/lib/services/customers";
@@ -15,12 +11,14 @@ import { getVehicleRegisters } from "@/lib/services/vehicleRegister";
 import { formatCurrency } from "@/lib/utils/format";
 import { RevenueReport } from "@/components/reports/revenue-report";
 import { CarsReport } from "@/components/reports/cars-report";
-import { CustomersReport } from "@/components/reports/customers-report";
 import type { Contract, Customer, Car, VehicleRegister } from "@/lib/types";
 import { AlertTriangle } from "lucide-react";
 
+function contractBasisDate(c: Contract): Date {
+  return new Date(c.createdAt ?? c.startDate);
+}
+
 export default function ReportsPage() {
-  const [dateRange, setDateRange] = useState("30");
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState({
     totalRevenue: 0,
@@ -44,23 +42,24 @@ export default function ReportsPage() {
           getVehicleRegisters(),
         ]);
 
-        const daysAgo = Number.parseInt(dateRange);
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+        const reportYear = new Date().getFullYear();
+        const yearStart = new Date(reportYear, 0, 1);
+        const yearEnd = new Date(reportYear + 1, 0, 1);
 
-        // Filter by period on creation (fallback to startDate if createdAt missing)
-        const filteredContracts = contracts.filter((c) => {
-          const basis = c.createdAt ?? c.startDate;
-          return new Date(basis) >= cutoffDate;
+        const ytdContracts = contracts.filter((c) => {
+          const d = contractBasisDate(c);
+          return d >= yearStart && d < yearEnd;
         });
 
-        // Revenue = only active/completed within period
-        const totalRevenue = filteredContracts
-          .filter((c) => c.status === "active" || c.status === "completed")
-          .reduce((sum, c) => sum + (c.total ?? 0), 0);
+        const ytdRevenueContracts = ytdContracts.filter(
+          (c) => c.status === "active" || c.status === "completed"
+        );
+
+        const totalRevenue = ytdRevenueContracts.reduce((sum, c) => sum + (c.total ?? 0), 0);
 
         const totalContracts = contracts.length; // Total in DB, irrespective of status or date
-        const averageContractValue = totalContracts > 0 ? totalRevenue / totalContracts : 0;
+        const averageContractValue =
+          ytdRevenueContracts.length > 0 ? totalRevenue / ytdRevenueContracts.length : 0;
 
         const totalCars = cars.length;
 
@@ -109,12 +108,9 @@ export default function ReportsPage() {
         setLoading(false);
       }
     })();
-  }, [dateRange]);
+  }, []);
 
-  const handleExport = () => {
-    // TODO: implement CSV/PDF export
-    alert("Export functionality would be implemented here");
-  };
+  const reportYear = new Date().getFullYear();
 
   return (
    <div className="flex flex-col gap-6">
@@ -127,6 +123,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
+            <p className="text-xs text-muted-foreground pt-1">Year to date {reportYear}</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -147,6 +144,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Avg Contract Value</CardTitle>
+            <p className="text-xs text-muted-foreground pt-1">Among {reportYear} revenue contracts</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -197,7 +195,7 @@ export default function ReportsPage() {
         </TabsList>
 
         <TabsContent value="revenue" className="space-y-4">
-          <RevenueReport dateRange={Number.parseInt(dateRange)} />
+          <RevenueReport />
         </TabsContent>
 
         <TabsContent value="cars" className="space-y-4">

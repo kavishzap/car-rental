@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { createContract, updateContract } from "@/lib/services/contracts";
 import { calculateContractTotal } from "@/lib/utils/contract-calculation";
 import { getCustomers } from "@/lib/services/customers";
@@ -97,6 +98,7 @@ export function ContractDialog({
     endDate: "",
     dailyRate: 0,
     days: 0,
+    inclusiveExclusive: false,
     subtotal: 0,
     taxRate: 0,
     total: 0,
@@ -180,6 +182,7 @@ export function ContractDialog({
         endDate: contract.endDate.split("T")[0],
         dailyRate: contract.dailyRate,
         days: contract.days,
+        inclusiveExclusive: contract.inclusiveExclusive ?? false,
         subtotal: contract.subtotal,
         taxRate: contract.taxRate || 0,
         total: contract.total,
@@ -222,6 +225,7 @@ export function ContractDialog({
         endDate: "",
         dailyRate: 0,
         days: 0,
+        inclusiveExclusive: false,
         subtotal: 0,
         taxRate: 0,
         total: 0,
@@ -302,11 +306,14 @@ export function ContractDialog({
       const ms = end.getTime() - start.getTime();
       // Calculate difference in days (Jan 19 to Jan 24 = 5 days)
       const diffDays = ms < 0 ? 0 : Math.floor(ms / (1000 * 60 * 60 * 24));
-      setFormData((prev) => ({ ...prev, days: diffDays }));
+      setFormData((prev) => ({
+        ...prev,
+        days: diffDays + (prev.inclusiveExclusive ? 1 : 0),
+      }));
     } else {
       setFormData((prev) => ({ ...prev, days: 0 }));
     }
-  }, [formData.startDate, formData.endDate]);
+  }, [formData.startDate, formData.endDate, formData.inclusiveExclusive]);
 
   // Recalculate totals when rate/days/tax or extra charges change
   useEffect(() => {
@@ -463,6 +470,7 @@ export function ContractDialog({
         endDate: new Date(formData.endDate).toISOString(),
         dailyRate: formData.dailyRate,
         days: formData.days,
+        inclusiveExclusive: formData.inclusiveExclusive,
         subtotal: formData.subtotal,
         discount: 0,
         taxRate: formData.taxRate,
@@ -766,6 +774,30 @@ export function ContractDialog({
                   setFormData({ ...formData, deliveryPlace: e.target.value })
                 }
               />
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="inclusive-exclusive" className="text-sm font-medium">
+                  Inclusive / Exclusive
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Inclusive adds 1 day to the rental length used for pricing (counts both start and end
+                  calendar days).
+                </p>
+              </div>
+              <div className="flex items-center gap-2 sm:shrink-0">
+                <span className="text-xs text-muted-foreground">Exclusive</span>
+                <Switch
+                  id="inclusive-exclusive"
+                  checked={formData.inclusiveExclusive}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, inclusiveExclusive: checked }))
+                  }
+                  aria-label="Inclusive adds one billing day"
+                />
+                <span className="text-xs text-muted-foreground">Inclusive</span>
+              </div>
             </div>
 
             <div className="space-y-2">

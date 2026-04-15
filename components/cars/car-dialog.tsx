@@ -24,7 +24,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { createCar, updateCar } from "@/lib/services/cars";
 import type { Car } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { fileToBase64 } from "@/lib/utils/fileToBase64";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -68,7 +67,6 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
     nta: "",              // NEW
     psv: "",              // NEW
     notes: "",
-    imageBase64: "" as string,
   });
 
   useEffect(() => {
@@ -86,7 +84,6 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
         nta: car.nta ?? "",
         psv: car.psv ?? "",
         notes: car.notes || "",
-        imageBase64: car.imageBase64 || "",
       });
     } else {
       setFormData({
@@ -102,7 +99,6 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
         nta: "",
         psv: "",
         notes: "",
-        imageBase64: "",
       });
     }
   }, [car, open]);
@@ -400,34 +396,6 @@ export function CarDialog({ open, car, onClose }: CarDialogProps) {
               rows={3}
               className="resize-none"
             />
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="image">Car Image</Label>
-            <div className="flex items-center gap-4">
-              {formData.imageBase64 ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={formData.imageBase64}
-                  alt="preview"
-                  className="h-16 w-24 rounded border object-cover"
-                />
-              ) : (
-                <div className="h-16 w-24 rounded border bg-muted" />
-              )}
-
-              <Input
-                id="image"
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const b64 = await fileToBase64(file);
-                  setFormData({ ...formData, imageBase64: b64 });
-                }}
-              />
-            </div>
           </div>
 
           <DialogFooter>

@@ -2,6 +2,10 @@
 import { supabase } from "@/lib/supabase";
 import type { Car } from "@/lib/types";
 
+/** All car columns except `image_base64` (large); keeps list/detail responses small. */
+const CAR_ROW_SELECT =
+  "id,name,brand,model,year,plate_number,price_per_day,status,km,servicing,nta,psv,notes,created_at,updated_at";
+
 const mapFromDb = (r: any): Car => ({
   id: r.id,
   name: r.name,
@@ -16,31 +20,35 @@ const mapFromDb = (r: any): Car => ({
   nta: r.nta,
   psv: r.psv,
   notes: r.notes,
-  imageBase64: r.image_base64,
+  ...(r.image_base64 != null && r.image_base64 !== ""
+    ? { imageBase64: r.image_base64 as string }
+    : {}),
   createdAt: r.created_at,
   updatedAt: r.updated_at,
 });
 
-const mapToDb = (c: Partial<Car>) => ({
-  name: c.name,
-  brand: c.brand,
-  model: c.model,
-  year: c.year,
-  plate_number: c.plateNumber,
-  price_per_day: c.pricePerDay,
-  status: c.status,
-  km: c.km,
-  servicing: c.servicing ?? null,
-  nta: c.nta ?? null,
-  psv: c.psv ?? null,
-  notes: c.notes ?? null,
-  image_base64: c.imageBase64 ?? null,
-});
+const mapToDb = (c: Partial<Car>): Record<string, unknown> => {
+  const row: Record<string, unknown> = {};
+  if (c.name !== undefined) row.name = c.name;
+  if (c.brand !== undefined) row.brand = c.brand;
+  if (c.model !== undefined) row.model = c.model;
+  if (c.year !== undefined) row.year = c.year;
+  if (c.plateNumber !== undefined) row.plate_number = c.plateNumber;
+  if (c.pricePerDay !== undefined) row.price_per_day = c.pricePerDay;
+  if (c.status !== undefined) row.status = c.status;
+  if (c.km !== undefined) row.km = c.km ?? null;
+  if (c.servicing !== undefined) row.servicing = c.servicing ?? null;
+  if (c.nta !== undefined) row.nta = c.nta ?? null;
+  if (c.psv !== undefined) row.psv = c.psv ?? null;
+  if (c.notes !== undefined) row.notes = c.notes ?? null;
+  if (c.imageBase64 !== undefined) row.image_base64 = c.imageBase64 ?? null;
+  return row;
+};
 
 export async function getCars(): Promise<Car[]> {
   const { data, error } = await supabase
     .from("cars")
-    .select("*")
+    .select(CAR_ROW_SELECT)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -52,7 +60,7 @@ export async function getCarById(id: string): Promise<Car | null> {
 
   const { data, error } = await supabase
     .from("cars")
-    .select("*")
+    .select(CAR_ROW_SELECT)
     .eq("id", id)
     .single();
 
@@ -69,7 +77,7 @@ export async function createCar(
   const { data, error } = await supabase
     .from("cars")
     .insert(mapToDb(payload))
-    .select("*")
+    .select(CAR_ROW_SELECT)
     .single();
 
   if (error) throw error;
@@ -84,7 +92,7 @@ export async function updateCar(
     .from("cars")
     .update(mapToDb(payload))
     .eq("id", id)
-    .select("*")
+    .select(CAR_ROW_SELECT)
     .single();
 
   if (error) throw error;

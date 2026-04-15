@@ -97,6 +97,7 @@ export default function ContractsPage() {
         contracts={filteredContracts}
         onEdit={handleEditContract}
         onDelete={handleDeleteContract}
+        onRefresh={loadContracts}
       />
 
       <ContractDialog

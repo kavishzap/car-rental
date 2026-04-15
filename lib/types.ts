@@ -75,6 +75,9 @@ export interface Contract {
   dailyRate: number;
   days: number;
 
+  /** When true, billing days = calendar span + 1 (inclusive end day). Maps to DB `inclusive_exclusive`. */
+  inclusiveExclusive?: boolean;
+
   subtotal: number;
   taxRate: number;
   total: number;

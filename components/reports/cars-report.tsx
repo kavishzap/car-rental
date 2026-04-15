@@ -16,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { getCars } from "@/lib/services/cars";
 import { getContractsByCar } from "@/lib/services/contracts";
 import { formatCurrency } from "@/lib/utils/format";
@@ -69,13 +68,6 @@ export function CarsReport() {
     }
   };
 
-  const statusColors: Record<string, "default" | "secondary" | "destructive"> =
-    {
-      available: "default",
-      maintenance: "secondary",
-      unavailable: "destructive",
-    };
-
   return (
     <Card>
       <CardHeader>
@@ -98,7 +90,6 @@ export function CarsReport() {
             <TableHeader>
               <TableRow>
                 <TableHead>Car</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Total Contracts</TableHead>
                 <TableHead>Total Days Rented</TableHead>
                 <TableHead>Total Revenue</TableHead>
@@ -110,11 +101,6 @@ export function CarsReport() {
                   <TableCell className="font-medium">
                     {car.name}
                     {car.plateNumber && `, ${car.plateNumber}`}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={statusColors[car.status]}>
-                      {car.status}
-                    </Badge>
                   </TableCell>
                   <TableCell>{car.totalContracts}</TableCell>
                   <TableCell>{car.totalDays}</TableCell>
