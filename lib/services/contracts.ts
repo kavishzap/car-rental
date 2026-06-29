@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { supabase } from "../supabase";
 import type {
   Contract,
@@ -250,6 +251,7 @@ export async function createContract(
     throw new Error(error.message);
   }
 
+  revalidatePath("/contracts");
   return mapRowToContract(data as ContractRow);
 }
 
@@ -272,6 +274,7 @@ export async function updateContract(
     throw new Error(error.message);
   }
 
+  revalidatePath("/contracts");
   return mapRowToContract(data as ContractRow);
 }
 

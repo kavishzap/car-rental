@@ -48,6 +48,7 @@ type ContractDialogProps = {
   open: boolean;
   contract: Contract | null;
   onClose: (shouldRefresh?: boolean) => void;
+  onSaved?: (contract: Contract) => void;
 };
 
 const isSameDay = (a: Date, b: Date) =>
@@ -67,6 +68,7 @@ export function ContractDialog({
   open,
   contract,
   onClose,
+  onSaved,
 }: ContractDialogProps) {
   const { toast } = useToast();
 
@@ -502,8 +504,9 @@ export function ContractDialog({
         secondDriverLicense: formData.secondDriverLicense || "",
       };
 
+      let saved: Contract;
       if (contract) {
-        await updateContract(contract.id, {
+        saved = await updateContract(contract.id, {
           contractNumber: contract.contractNumber,
           ...base,
         });
@@ -512,13 +515,14 @@ export function ContractDialog({
           description: `Contract ${contract.contractNumber} updated.`,
         });
       } else {
-        await createContract(base);
+        saved = await createContract(base);
         toast({
           title: "Contract created",
           description: "A new contract has been created successfully.",
         });
       }
 
+      onSaved?.(saved);
       onClose(true);
     } catch (err: any) {
       toast({
@@ -537,7 +541,12 @@ export function ContractDialog({
   }));
 
   return (
-    <Dialog open={open} onOpenChange={() => onClose()}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+    >
       <DialogContent 
         className="max-h-[85vh] w-[70vw] max-w-2xl xl:max-w-5xl overflow-hidden flex flex-col"
         onInteractOutside={(e) => e.preventDefault()}

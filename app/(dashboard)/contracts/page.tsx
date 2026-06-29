@@ -79,6 +79,18 @@ export default function ContractsPage() {
     }
   }
 
+  const handleContractSaved = (saved: Contract) => {
+    setContracts((prev) => {
+      const idx = prev.findIndex((c) => c.id === saved.id)
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = saved
+        return next
+      }
+      return [saved, ...prev]
+    })
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -104,6 +116,7 @@ export default function ContractsPage() {
         open={isDialogOpen}
         contract={editingContract}
         onClose={handleDialogClose}
+        onSaved={handleContractSaved}
       />
 
       {/* Optional tiny loading hint */}

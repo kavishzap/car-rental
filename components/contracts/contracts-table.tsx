@@ -108,6 +108,10 @@ export function ContractsTable({
   }, [totalPages, page]);
 
   useEffect(() => {
+    setPage(1);
+  }, [contracts.length]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);

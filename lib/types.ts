@@ -32,6 +32,8 @@ export type Customer = {
   city?: string | null;
   country?: string | null;
   license?: string | null;
+  age?: number | null;
+  drivingExp?: number | null;
   notes?: string | null;
   photoBase64?: string | null;
   createdAt: string;

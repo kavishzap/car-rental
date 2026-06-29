@@ -16,7 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { createCustomer, updateCustomer } from "@/lib/services/customers";
 import type { Customer } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { fileToBase64 } from "@/lib/utils/fileToBase64";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 type CustomerDialogProps = {
   open: boolean;
@@ -35,8 +36,10 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
     address: "",
     city: "",        // NEW
     country: "",     // NEW
-    license: "",     // NEW
-    notes: "",       // NEW
+    license: "",
+    age: "",
+    drivingExp: "",
+    notes: "",
     photoBase64: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +56,8 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
         city: customer.city || "",
         country: customer.country || "",
         license: customer.license || "",
+        age: customer.age != null ? String(customer.age) : "",
+        drivingExp: customer.drivingExp != null ? String(customer.drivingExp) : "",
         notes: customer.notes || "",
         photoBase64: customer.photoBase64 || "",
       });
@@ -67,24 +72,50 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
         city: "",
         country: "",
         license: "",
+        age: "",
+        drivingExp: "",
         notes: "",
         photoBase64: "",
       });
     }
   }, [customer, open]);
 
+  const ageNum = formData.age.trim() !== "" ? Number(formData.age) : null;
+  const drivingExpNum =
+    formData.drivingExp.trim() !== "" ? Number(formData.drivingExp) : null;
+  const showAgeWarning = ageNum != null && !Number.isNaN(ageNum) && ageNum < 25;
+  const showDrivingExpWarning =
+    drivingExpNum != null && !Number.isNaN(drivingExpNum) && drivingExpNum < 2;
+
+  const buildPayload = () => ({
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    email: formData.email,
+    phone: formData.phone,
+    nicOrPassport: formData.nicOrPassport,
+    address: formData.address,
+    city: formData.city,
+    country: formData.country,
+    license: formData.license,
+    notes: formData.notes,
+    photoBase64: formData.photoBase64,
+    age: ageNum,
+    drivingExp: drivingExpNum,
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const payload = buildPayload();
       if (customer) {
-        await updateCustomer(customer.id, formData);
+        await updateCustomer(customer.id, payload);
         toast({
           title: "Customer updated",
           description: `${formData.firstName} ${formData.lastName} has been updated successfully.`,
         });
       } else {
-        await createCustomer(formData as any);
+        await createCustomer(payload);
         toast({
           title: "Customer created",
           description: `${formData.firstName} ${formData.lastName} has been added to the system.`,
@@ -183,6 +214,48 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
                 onChange={(e) => setFormData({ ...formData, license: e.target.value })}
                 placeholder="Driving license / ref"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="age">Driver&apos;s Age (optional)</Label>
+              <Input
+                id="age"
+                type="number"
+                min={0}
+                value={formData.age}
+                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                placeholder="Years"
+              />
+              {showAgeWarning && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertTriangle />
+                  <AlertDescription>
+                    Driver is under 25 years old. Additional charges or restrictions may apply.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="drivingExp">Driving Experience (optional)</Label>
+              <Input
+                id="drivingExp"
+                type="number"
+                min={0}
+                value={formData.drivingExp}
+                onChange={(e) =>
+                  setFormData({ ...formData, drivingExp: e.target.value })
+                }
+                placeholder="Years"
+              />
+              {showDrivingExpWarning && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertTriangle />
+                  <AlertDescription>
+                    Driver has less than 2 years of experience. Additional charges or restrictions may apply.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             <div className="space-y-2">

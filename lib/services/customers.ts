@@ -12,6 +12,8 @@ const mapFromDb = (r: any): Customer => ({
   photoBase64: r.photo_base64,
   notes: r.notes,          // NEW
   license: r.license,      // NEW
+  age: r.age ?? null,
+  drivingExp: r.driving_exp ?? null,
   city: r.city,            // NEW
   country: r.country,      // NEW
   createdAt: r.created_at,
@@ -28,6 +30,8 @@ const mapToDb = (c: Partial<Customer>) => ({
   photo_base64: c.photoBase64 ?? null,
   notes: c.notes ?? null,        // NEW
   license: c.license ?? null,    // NEW
+  age: c.age ?? null,
+  driving_exp: c.drivingExp ?? null,
   city: c.city ?? null,          // NEW
   country: c.country ?? null,    // NEW
 });
