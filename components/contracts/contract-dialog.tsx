@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { createContract, updateContract } from "@/lib/services/contracts";
 import { calculateContractTotal } from "@/lib/utils/contract-calculation";
+import { resolveCustomerNicOrPassport } from "@/lib/utils/customer-nic";
 import { getCustomers } from "@/lib/services/customers";
 import { getCars } from "@/lib/services/cars";
 import type { Contract } from "@/lib/types";
@@ -176,7 +177,12 @@ export function ContractDialog({
       const secondDriverName = (contract as any).secondDriverName ?? "";
       // Try to match second driver by name
       const matchedSecondDriver = customers.find((c) => c.name === secondDriverName);
-      
+      const matchedCustomer = customers.find((c) => c.id === contract.customerId);
+      const resolvedNic =
+        resolveCustomerNicOrPassport(contract.customerNicOrPassport) ||
+        matchedCustomer?.nicOrPassport?.trim() ||
+        "";
+
       setFormData({
         customerId: contract.customerId,
         carId: contract.carId,
@@ -191,7 +197,7 @@ export function ContractDialog({
         status: contract.status,
         notes: contract.notes || "",
         licenseNumber: contract.licenseNumber || "",
-        customerNicOrPassport: contract.customerNicOrPassport || "",
+        customerNicOrPassport: resolvedNic,
         clientSignatureBase64: contract.clientSignatureBase64 || "",
 
         fuelAmount: (contract as any).fuelAmount ?? 0,
@@ -269,6 +275,20 @@ export function ContractDialog({
       }
     }
   }, [customers, contract, formData.secondDriverName, formData.secondDriverId]);
+
+  // Fill NIC from customer when portal payload had no NIC field
+  useEffect(() => {
+    if (!contract || customers.length === 0) return;
+    if (formData.customerNicOrPassport?.trim()) return;
+    const matchedCustomer = customers.find((c) => c.id === contract.customerId);
+    const nic = matchedCustomer?.nicOrPassport?.trim();
+    if (!nic) return;
+    setFormData((prev) =>
+      prev.customerNicOrPassport?.trim()
+        ? prev
+        : { ...prev, customerNicOrPassport: nic }
+    );
+  }, [customers, contract, formData.customerNicOrPassport]);
 
   // 🆕 Load booked dates when creating a new contract & car changes
   // 🆕 Load booked dates when creating a new contract & car changes

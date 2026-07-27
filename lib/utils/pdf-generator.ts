@@ -1,6 +1,7 @@
 // src/lib/utils/pdf-generator.ts
 import { jsPDF } from "jspdf";
 import type { Contract } from "@/lib/types";
+import { resolveCustomerNicOrPassport } from "@/lib/utils/customer-nic";
 
 type CompanyDetails = {
   id: string;
@@ -21,6 +22,7 @@ type Customer = {
   address?: string | null;
   city?: string | null;
   country?: string | null;
+  nicOrPassport?: string | null;
 };
 
 type Car = {
@@ -256,10 +258,15 @@ export async function buildContractHtml({
     rightY += 14;
   }
 
-  if (contract.customerNicOrPassport) {
+  const nicOrPassport =
+    resolveCustomerNicOrPassport(contract.customerNicOrPassport) ||
+    customer.nicOrPassport?.trim() ||
+    undefined;
+
+  if (nicOrPassport) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`NIC/Passport: ${contract.customerNicOrPassport}`, col2X, rightY);
+    doc.text(`NIC/Passport: ${nicOrPassport}`, col2X, rightY);
     rightY += 14;
   }
 

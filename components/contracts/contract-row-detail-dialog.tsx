@@ -29,6 +29,7 @@ import { getContractById, updateContract } from "@/lib/services/contracts";
 import { getCustomerById } from "@/lib/services/customers";
 import type { Contract, ContractStatus, Customer } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { resolveCustomerNicOrPassport } from "@/lib/utils/customer-nic";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -325,6 +326,10 @@ export function ContractRowDetailDialog({
     `${row.carName ?? "—"}${row.carPlateNumber ? `(${row.carPlateNumber})` : ""}`;
 
   const displayName = row?.customerName ?? "—";
+  const displayNicOrPassport =
+    resolveCustomerNicOrPassport(contract?.customerNicOrPassport)?.trim() ||
+    customer?.nicOrPassport?.trim() ||
+    "";
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -542,7 +547,7 @@ export function ContractRowDetailDialog({
                   {contract.licenseNumber?.trim() ? contract.licenseNumber : "—"}
                 </FieldBlock>
                 <FieldBlock label="Customer NIC / Passport">
-                  {contract.customerNicOrPassport?.trim() ? contract.customerNicOrPassport : "—"}
+                  {displayNicOrPassport || "—"}
                 </FieldBlock>
               </div>
 

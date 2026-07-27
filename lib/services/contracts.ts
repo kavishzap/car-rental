@@ -7,6 +7,7 @@ import type {
   ContractCreateInput,
   ContractUpdateInput,
 } from "@/lib/types";
+import { resolveCustomerNicOrPassport } from "@/lib/utils/customer-nic";
 
 // NOTE: calculateContractTotal removed from here.
 // It will live in a separate utils file.
@@ -108,7 +109,7 @@ function mapRowToContract(row: ContractRow): Contract {
     status: row.status as Contract["status"],
 
     licenseNumber: row.license_number ?? undefined,
-    customerNicOrPassport: row.customer_data ?? undefined,
+    customerNicOrPassport: resolveCustomerNicOrPassport(row.customer_data),
     clientSignatureBase64: normalizeImageDataUrl(
       row.client_signature_base64
     ),
@@ -173,7 +174,8 @@ function payloadToRow(
     status: payload.status,
 
     license_number: payload.licenseNumber ?? null,
-    customer_data: payload.customerNicOrPassport ?? null,
+    customer_data:
+      resolveCustomerNicOrPassport(payload.customerNicOrPassport) ?? null,
     client_signature_base64: payload.clientSignatureBase64 ?? null,
     siege_bb_amount: payload.siegeBBAmount ?? null, // 👈 NEW
     rehausseur_amount: payload.rehausseurAmount ?? null, // 👈 NEW
