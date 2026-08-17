@@ -25,7 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { createContract, updateContract } from "@/lib/services/contracts";
 import { calculateContractTotal } from "@/lib/utils/contract-calculation";
 import { resolveCustomerNicOrPassport } from "@/lib/utils/customer-nic";
-import { getCustomers } from "@/lib/services/customers";
+import { getCustomers, getCustomerById, updateCustomer } from "@/lib/services/customers";
 import { getCars } from "@/lib/services/cars";
 import type { Contract } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -74,7 +74,13 @@ export function ContractDialog({
   const { toast } = useToast();
 
   const [customers, setCustomers] = useState<
-    Array<{ id: string; name: string; license?: string | null; nicOrPassport?: string | null }>
+    Array<{
+      id: string;
+      name: string;
+      license?: string | null;
+      nicOrPassport?: string | null;
+      flightNumber?: string | null;
+    }>
   >([]);
   const [cars, setCars] = useState<
     Array<{
@@ -108,6 +114,7 @@ export function ContractDialog({
     status: "draft" as "draft" | "active" | "completed" | "cancelled",
     notes: "",
     licenseNumber: "",
+    flightNumber: "",
     customerNicOrPassport: "",
     clientSignatureBase64: "",
 
@@ -148,6 +155,7 @@ export function ContractDialog({
             name: `${c.firstName} ${c.lastName}`,
             license: c.license,
             nicOrPassport: c.nicOrPassport,
+            flightNumber: c.flightNumber,
           }))
         );
         setCars(
@@ -182,6 +190,10 @@ export function ContractDialog({
         resolveCustomerNicOrPassport(contract.customerNicOrPassport) ||
         matchedCustomer?.nicOrPassport?.trim() ||
         "";
+      const resolvedLicense =
+        contract.licenseNumber?.trim() ||
+        matchedCustomer?.license?.trim() ||
+        "";
 
       setFormData({
         customerId: contract.customerId,
@@ -196,7 +208,8 @@ export function ContractDialog({
         total: contract.total,
         status: contract.status,
         notes: contract.notes || "",
-        licenseNumber: contract.licenseNumber || "",
+        licenseNumber: resolvedLicense,
+        flightNumber: matchedCustomer?.flightNumber?.trim() || "",
         customerNicOrPassport: resolvedNic,
         clientSignatureBase64: contract.clientSignatureBase64 || "",
 
@@ -240,6 +253,7 @@ export function ContractDialog({
         status: "draft",
         notes: "",
         licenseNumber: "",
+        flightNumber: "",
         customerNicOrPassport: "",
         clientSignatureBase64: "",
         fuelAmount: 0,
@@ -276,19 +290,39 @@ export function ContractDialog({
     }
   }, [customers, contract, formData.secondDriverName, formData.secondDriverId]);
 
-  // Fill NIC from customer when portal payload had no NIC field
+  // Fill NIC, license, and flight number from customer when the contract copy is empty
   useEffect(() => {
     if (!contract || customers.length === 0) return;
-    if (formData.customerNicOrPassport?.trim()) return;
     const matchedCustomer = customers.find((c) => c.id === contract.customerId);
-    const nic = matchedCustomer?.nicOrPassport?.trim();
-    if (!nic) return;
-    setFormData((prev) =>
-      prev.customerNicOrPassport?.trim()
-        ? prev
-        : { ...prev, customerNicOrPassport: nic }
-    );
-  }, [customers, contract, formData.customerNicOrPassport]);
+    if (!matchedCustomer) return;
+    const nic = matchedCustomer.nicOrPassport?.trim();
+    const license = matchedCustomer.license?.trim();
+    const flightNumber = matchedCustomer.flightNumber?.trim();
+    setFormData((prev) => {
+      const nextNic = prev.customerNicOrPassport?.trim()
+        ? prev.customerNicOrPassport
+        : nic ?? "";
+      const nextLicense = prev.licenseNumber?.trim()
+        ? prev.licenseNumber
+        : license ?? "";
+      const nextFlight = prev.flightNumber?.trim()
+        ? prev.flightNumber
+        : flightNumber ?? "";
+      if (
+        nextNic === prev.customerNicOrPassport &&
+        nextLicense === prev.licenseNumber &&
+        nextFlight === prev.flightNumber
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        customerNicOrPassport: nextNic,
+        licenseNumber: nextLicense,
+        flightNumber: nextFlight,
+      };
+    });
+  }, [customers, contract]);
 
   // 🆕 Load booked dates when creating a new contract & car changes
   // 🆕 Load booked dates when creating a new contract & car changes
@@ -419,12 +453,14 @@ export function ContractDialog({
     const selectedCustomer = customers.find((c) => c.id === customerId);
     const licenseValue = selectedCustomer?.license?.trim();
     const nicOrPassportValue = selectedCustomer?.nicOrPassport?.trim();
+    const flightNumberValue = selectedCustomer?.flightNumber?.trim();
 
     setFormData((prev) => ({
       ...prev,
       customerId,
       licenseNumber: licenseValue ? licenseValue : prev.licenseNumber,
       customerNicOrPassport: nicOrPassportValue ? nicOrPassportValue : prev.customerNicOrPassport,
+      flightNumber: flightNumberValue ? flightNumberValue : prev.flightNumber,
     }));
   };
 
@@ -523,6 +559,14 @@ export function ContractDialog({
         secondDriverName: formData.secondDriverName || "",
         secondDriverLicense: formData.secondDriverLicense || "",
       };
+
+      const existingCustomer = await getCustomerById(formData.customerId);
+      if (existingCustomer) {
+        await updateCustomer(existingCustomer.id, {
+          ...existingCustomer,
+          flightNumber: formData.flightNumber.trim() || null,
+        });
+      }
 
       let saved: Contract;
       if (contract) {
@@ -863,6 +907,18 @@ export function ContractDialog({
                 value={formData.licenseNumber}
                 onChange={(e) =>
                   setFormData({ ...formData, licenseNumber: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="flightNumber">Flight Number</Label>
+              <Input
+                id="flightNumber"
+                placeholder="e.g. MK123"
+                value={formData.flightNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, flightNumber: e.target.value })
                 }
               />
             </div>

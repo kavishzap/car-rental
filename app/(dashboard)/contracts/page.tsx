@@ -84,7 +84,7 @@ export default function ContractsPage() {
       const idx = prev.findIndex((c) => c.id === saved.id)
       if (idx >= 0) {
         const next = [...prev]
-        next[idx] = saved
+        next[idx] = { ...prev[idx], ...saved }
         return next
       }
       return [saved, ...prev]

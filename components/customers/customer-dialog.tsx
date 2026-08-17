@@ -41,6 +41,7 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
     drivingExp: "",
     notes: "",
     photoBase64: "",
+    flightNumber: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -60,6 +61,7 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
         drivingExp: customer.drivingExp != null ? String(customer.drivingExp) : "",
         notes: customer.notes || "",
         photoBase64: customer.photoBase64 || "",
+        flightNumber: customer.flightNumber || "",
       });
     } else {
       setFormData({
@@ -76,6 +78,7 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
         drivingExp: "",
         notes: "",
         photoBase64: "",
+        flightNumber: "",
       });
     }
   }, [customer, open]);
@@ -99,6 +102,7 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
     license: formData.license,
     notes: formData.notes,
     photoBase64: formData.photoBase64,
+    flightNumber: formData.flightNumber.trim() || null,
     age: ageNum,
     drivingExp: drivingExpNum,
   });
@@ -273,6 +277,18 @@ export function CustomerDialog({ open, customer, onClose }: CustomerDialogProps)
                 id="country"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="flightNumber">Flight Number</Label>
+              <Input
+                id="flightNumber"
+                value={formData.flightNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, flightNumber: e.target.value })
+                }
+                placeholder="e.g. MK123"
               />
             </div>
           </div>

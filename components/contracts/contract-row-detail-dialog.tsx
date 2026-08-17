@@ -57,7 +57,7 @@ type ContractRowDetailDialogProps = {
   open: boolean;
   row: EnrichedRow | null;
   onClose: () => void;
-  onSaved?: () => void;
+  onSaved?: (contract?: Contract) => void;
 };
 
 type ContractSignatureCanvasHandle = {
@@ -305,13 +305,13 @@ export function ContractRowDetailDialog({
   const mergeUpdate = async (patch: Partial<Contract>) => {
     if (!contract) return;
     try {
-      await updateContract(contract.id, {
+      const saved = await updateContract(contract.id, {
         ...contract,
         ...patch,
       });
       toast({ title: "Saved", description: "Contract updated." });
       await load();
-      onSaved?.();
+      onSaved?.(saved);
     } catch (e: unknown) {
       toast({
         title: "Save failed",
@@ -330,6 +330,9 @@ export function ContractRowDetailDialog({
     resolveCustomerNicOrPassport(contract?.customerNicOrPassport)?.trim() ||
     customer?.nicOrPassport?.trim() ||
     "";
+  const displayLicense =
+    contract?.licenseNumber?.trim() || customer?.license?.trim() || "";
+  const displayFlightNumber = customer?.flightNumber?.trim() || "";
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -513,7 +516,7 @@ export function ContractRowDetailDialog({
                 />
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="outline" onClick={() => sigRef.current?.clear()}>
-                    Clear drawing
+                    Clear signature
                   </Button>
                   <Button
                     type="button"
@@ -544,10 +547,13 @@ export function ContractRowDetailDialog({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <FieldBlock label="License number">
-                  {contract.licenseNumber?.trim() ? contract.licenseNumber : "—"}
+                  {displayLicense || "—"}
                 </FieldBlock>
                 <FieldBlock label="Customer NIC / Passport">
                   {displayNicOrPassport || "—"}
+                </FieldBlock>
+                <FieldBlock label="Flight number">
+                  {displayFlightNumber || "—"}
                 </FieldBlock>
               </div>
 

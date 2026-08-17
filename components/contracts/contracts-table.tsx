@@ -1,7 +1,7 @@
 // src/components/contracts/contracts-table.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -73,6 +73,15 @@ type Enriched = Contract & {
   ownerSignatureBase64?: string;
 };
 
+function contractSyncKey(list: Contract[]) {
+  return list
+    .map(
+      (c) =>
+        `${c.id}:${c.updatedAt ?? ""}:${c.status}:${c.total}:${c.days}:${c.customerId}:${c.carId}:${c.startDate}:${c.endDate}:${c.contractNumber}`
+    )
+    .join("|");
+}
+
 export function ContractsTable({
   contracts,
   onEdit,
@@ -90,7 +99,9 @@ export function ContractsTable({
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
 
-  const inputContracts = useMemo(() => contracts, [contracts]);
+  const syncKey = useMemo(() => contractSyncKey(contracts), [contracts]);
+  const contractsRef = useRef(contracts);
+  contractsRef.current = contracts;
 
   // Pagination calculations
   const total = rows.length;
@@ -112,12 +123,51 @@ export function ContractsTable({
   }, [contracts.length]);
 
   useEffect(() => {
+    const list = contractsRef.current;
+    setRows((prev) => {
+      const prevById = new Map(prev.map((r) => [r.id, r]));
+      const next = list.map((c) => {
+        const old = prevById.get(c.id);
+        return {
+          ...c,
+          customerName: old?.customerName,
+          carName: old?.carName,
+          carPlateNumber: old?.carPlateNumber,
+        } as Enriched;
+      });
+      if (
+        next.length === prev.length &&
+        next.every((row, i) => {
+          const old = prev[i];
+          return (
+            old &&
+            old.id === row.id &&
+            old.status === row.status &&
+            old.total === row.total &&
+            old.days === row.days &&
+            old.startDate === row.startDate &&
+            old.endDate === row.endDate &&
+            old.customerId === row.customerId &&
+            old.carId === row.carId &&
+            old.contractNumber === row.contractNumber &&
+            old.updatedAt === row.updatedAt
+          );
+        })
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [syncKey]);
+
+  useEffect(() => {
+    const list = contractsRef.current;
     let cancelled = false;
     (async () => {
       setLoading(true);
       try {
         const enriched = await Promise.all(
-          inputContracts.map(async (contract) => {
+          list.map(async (contract) => {
             try {
               const [customer, car] = await Promise.all([
                 getCustomerById(contract.customerId),
@@ -144,7 +194,16 @@ export function ContractsTable({
         );
         if (!cancelled) setRows(enriched);
       } catch {
-        if (!cancelled) setRows(inputContracts as Enriched[]);
+        if (!cancelled) {
+          setRows(
+            list.map((c) => ({
+              ...c,
+              customerName: "Unknown",
+              carName: "No car",
+              carPlateNumber: "",
+            }))
+          );
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -152,7 +211,7 @@ export function ContractsTable({
     return () => {
       cancelled = true;
     };
-  }, [inputContracts]);
+  }, [syncKey]);
 
   const handleDownloadPDF = async (contract: Contract) => {
     const [customer, car, company] = await Promise.all([
@@ -431,7 +490,33 @@ export function ContractsTable({
         open={detailRow != null}
         row={detailRow}
         onClose={() => setDetailRow(null)}
-        onSaved={() => {
+        onSaved={(saved) => {
+          if (saved) {
+            setRows((prev) =>
+              prev.map((r) =>
+                r.id === saved.id
+                  ? {
+                      ...r,
+                      ...saved,
+                      customerName: r.customerName,
+                      carName: r.carName,
+                      carPlateNumber: r.carPlateNumber,
+                    }
+                  : r
+              )
+            );
+            setDetailRow((prev) =>
+              prev && prev.id === saved.id
+                ? {
+                    ...prev,
+                    ...saved,
+                    customerName: prev.customerName,
+                    carName: prev.carName,
+                    carPlateNumber: prev.carPlateNumber,
+                  }
+                : prev
+            );
+          }
           void onRefresh?.();
         }}
       />

@@ -16,6 +16,7 @@ const mapFromDb = (r: any): Customer => ({
   drivingExp: r.driving_exp ?? null,
   city: r.city,            // NEW
   country: r.country,      // NEW
+  flightNumber: r.flight_number ?? null,
   createdAt: r.created_at,
   updatedAt: r.updated_at,
 });
@@ -34,6 +35,7 @@ const mapToDb = (c: Partial<Customer>) => ({
   driving_exp: c.drivingExp ?? null,
   city: c.city ?? null,          // NEW
   country: c.country ?? null,    // NEW
+  flight_number: c.flightNumber ?? null,
 });
 
 export async function getCustomers(): Promise<Customer[]> {

@@ -36,6 +36,7 @@ export type Customer = {
   drivingExp?: number | null;
   notes?: string | null;
   photoBase64?: string | null;
+  flightNumber?: string | null;
   createdAt: string;
   updatedAt: string;
 };

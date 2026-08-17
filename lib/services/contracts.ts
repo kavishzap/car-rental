@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import { supabase } from "../supabase";
 import type {
   Contract,
@@ -206,6 +206,7 @@ function payloadToRow(
 
 // LIST
 export async function getContracts(): Promise<Contract[]> {
+  noStore();
   const { data, error } = await supabase
     .from("contracts_details")
     .select("*")
@@ -221,6 +222,7 @@ export async function getContracts(): Promise<Contract[]> {
 
 // GET ONE
 export async function getContractById(id: string): Promise<Contract | null> {
+  noStore();
   const { data, error } = await supabase
     .from("contracts_details")
     .select("*")

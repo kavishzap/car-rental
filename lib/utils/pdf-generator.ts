@@ -23,6 +23,8 @@ type Customer = {
   city?: string | null;
   country?: string | null;
   nicOrPassport?: string | null;
+  license?: string | null;
+  flightNumber?: string | null;
 };
 
 type Car = {
@@ -251,10 +253,13 @@ export async function buildContractHtml({
     rightY += 14;
   }
 
-  if (contract.licenseNumber) {
+  const licenseNo =
+    contract.licenseNumber?.trim() || customer.license?.trim() || "";
+
+  if (licenseNo) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`License No: ${contract.licenseNumber}`, col2X, rightY);
+    doc.text(`License No: ${licenseNo}`, col2X, rightY);
     rightY += 14;
   }
 
@@ -267,6 +272,14 @@ export async function buildContractHtml({
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text(`NIC/Passport: ${nicOrPassport}`, col2X, rightY);
+    rightY += 14;
+  }
+
+  const flightNumber = customer.flightNumber?.trim();
+  if (flightNumber) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Flight No: ${flightNumber}`, col2X, rightY);
     rightY += 14;
   }
 
