@@ -12,11 +12,11 @@ import { formatCurrency } from "@/lib/utils/format";
 import { RevenueReport } from "@/components/reports/revenue-report";
 import { CarsReport } from "@/components/reports/cars-report";
 import type { Contract, Customer, Car, VehicleRegister } from "@/lib/types";
+import {
+  countYearRevenueContracts,
+  sumYearRevenueFromContracts,
+} from "@/lib/utils/revenue-by-month";
 import { AlertTriangle } from "lucide-react";
-
-function contractBasisDate(c: Contract): Date {
-  return new Date(c.createdAt ?? c.startDate);
-}
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
@@ -43,23 +43,13 @@ export default function ReportsPage() {
         ]);
 
         const reportYear = new Date().getFullYear();
-        const yearStart = new Date(reportYear, 0, 1);
-        const yearEnd = new Date(reportYear + 1, 0, 1);
 
-        const ytdContracts = contracts.filter((c) => {
-          const d = contractBasisDate(c);
-          return d >= yearStart && d < yearEnd;
-        });
-
-        const ytdRevenueContracts = ytdContracts.filter(
-          (c) => c.status === "active" || c.status === "completed"
-        );
-
-        const totalRevenue = ytdRevenueContracts.reduce((sum, c) => sum + (c.total ?? 0), 0);
+        const totalRevenue = sumYearRevenueFromContracts(contracts, reportYear);
 
         const totalContracts = contracts.length; // Total in DB, irrespective of status or date
+        const ytdRevenueContractCount = countYearRevenueContracts(contracts, reportYear);
         const averageContractValue =
-          ytdRevenueContracts.length > 0 ? totalRevenue / ytdRevenueContracts.length : 0;
+          ytdRevenueContractCount > 0 ? totalRevenue / ytdRevenueContractCount : 0;
 
         const totalCars = cars.length;
 

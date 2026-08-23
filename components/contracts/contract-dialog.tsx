@@ -802,7 +802,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pickupTime">Delivery Time</Label>
+              <Label htmlFor="pickupTime">Pick Up Time</Label>
               <Input
                 id="pickupTime"
                 type="time"
@@ -814,7 +814,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pickupPlace">Delivery Place</Label>
+              <Label htmlFor="pickupPlace">Pick Up Place</Label>
               <Input
                 id="pickupPlace"
                 type="text"
@@ -826,7 +826,7 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deliveryTime">Recovery Time</Label>
+              <Label htmlFor="deliveryTime">Return Time</Label>
               <Input
                 id="deliveryTime"
                 type="time"
@@ -838,10 +838,10 @@ export function ContractDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deliveryPlace">Recovery Place</Label>
+              <Label htmlFor="deliveryPlace">Return Place</Label>
               <Input
                 id="deliveryPlace"
-                placeholder="Recovery location"
+                placeholder="Return location"
                 value={formData.deliveryPlace}
                 onChange={(e) =>
                   setFormData({ ...formData, deliveryPlace: e.target.value })

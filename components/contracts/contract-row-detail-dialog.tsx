@@ -440,14 +440,14 @@ export function ContractRowDetailDialog({
               <Separator />
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <FieldBlock label="Delivery place">
+                <FieldBlock label="Pick up place">
                   {contract.pickupPlace?.trim() ? contract.pickupPlace : "—"}
                 </FieldBlock>
-                <FieldBlock label="Delivery time">{formatTime(contract.pickupTime)}</FieldBlock>
-                <FieldBlock label="Recovery place">
+                <FieldBlock label="Pick up time">{formatTime(contract.pickupTime)}</FieldBlock>
+                <FieldBlock label="Return place">
                   {contract.deliveryPlace?.trim() ? contract.deliveryPlace : "—"}
                 </FieldBlock>
-                <FieldBlock label="Recovery time">{formatTime(contract.deliveryTime)}</FieldBlock>
+                <FieldBlock label="Return time">{formatTime(contract.deliveryTime)}</FieldBlock>
               </div>
 
               <FieldBlock label="Customer address">{formatCustomerAddress(customer)}</FieldBlock>

@@ -11,10 +11,17 @@ interface PageHeaderProps {
   title: string
   actions?: React.ReactNode
   showSearch?: boolean
+  searchPlaceholder?: string
   onSearch?: (value: string) => void
 }
 
-export function PageHeader({ title, actions, showSearch, onSearch }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  actions,
+  showSearch,
+  searchPlaceholder = "Search...",
+  onSearch,
+}: PageHeaderProps) {
   const { setTheme, theme } = useTheme()
 
   return (
@@ -29,7 +36,7 @@ export function PageHeader({ title, actions, showSearch, onSearch }: PageHeaderP
             <div className="relative min-w-0 w-full sm:min-w-0 sm:flex-1 md:w-64 md:max-w-xs md:flex-none lg:max-w-sm">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder={searchPlaceholder}
                 className="w-full pl-9"
                 onChange={(e) => onSearch?.(e.target.value)}
               />

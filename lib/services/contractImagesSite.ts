@@ -57,6 +57,20 @@ export async function addContractImage(input: {
   imageBase64: string;
   caption?: string;
 }): Promise<ContractImage> {
+  const { count, error: countError } = await supabase
+    .from("contract_images_sites")
+    .select("*", { count: "exact", head: true })
+    .eq("contract_id", input.contractId);
+
+  if (countError) {
+    console.error("addContractImage count error", countError);
+    throw new Error(countError.message);
+  }
+
+  if ((count ?? 0) >= 4) {
+    throw new Error("Maximum of 4 images allowed per contract.");
+  }
+
   const { data, error } = await supabase
     .from("contract_images_sites")
     .insert({
@@ -73,6 +87,52 @@ export async function addContractImage(input: {
   }
 
   return mapRow(data as ContractImageRow);
+}
+
+export async function addContractImages(input: {
+  contractId: string;
+  images: Array<{ imageBase64: string; caption?: string }>;
+}): Promise<ContractImage[]> {
+  if (input.images.length === 0) return [];
+
+  const { count, error: countError } = await supabase
+    .from("contract_images_sites")
+    .select("*", { count: "exact", head: true })
+    .eq("contract_id", input.contractId);
+
+  if (countError) {
+    console.error("addContractImages count error", countError);
+    throw new Error(countError.message);
+  }
+
+  const existing = count ?? 0;
+  const remaining = 4 - existing;
+  if (remaining <= 0) {
+    throw new Error("Maximum of 4 images allowed per contract.");
+  }
+
+  const toInsert = input.images.slice(0, remaining);
+  if (input.images.length > remaining) {
+    throw new Error(`Only ${remaining} more image(s) can be added (maximum 4 per contract).`);
+  }
+
+  const rows = toInsert.map((img) => ({
+    contract_id: input.contractId,
+    image_base64: img.imageBase64,
+    caption: img.caption ?? null,
+  }));
+
+  const { data, error } = await supabase
+    .from("contract_images_sites")
+    .insert(rows)
+    .select();
+
+  if (error) {
+    console.error("addContractImages error", error);
+    throw new Error(error.message);
+  }
+
+  return (data as ContractImageRow[]).map(mapRow);
 }
 
 export async function updateContractImage(

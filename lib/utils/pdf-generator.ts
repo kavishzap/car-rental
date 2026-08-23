@@ -100,10 +100,7 @@ export async function buildContractHtml({
     { label: "Total", value: formatMoney(contract.total), isBold: true },
   ];
 
-  const notesSnippet = contract.notes
-    ? contract.notes.replace(/\s+/g, " ").slice(0, 80) +
-      (contract.notes.replace(/\s+/g, " ").length > 80 ? "…" : "")
-    : "-";
+  const notesText = contract.notes?.trim() ?? "";
   // ---------- COMPANY HEADER ----------
   const headerTopY = y;
 
@@ -355,7 +352,7 @@ export async function buildContractHtml({
 
   if (contract.pickupTime || contract.deliveryTime) {
     doc.text(
-      `Delivery Time: ${contract.pickupTime ?? "-"} | Recovery Time: ${
+      `Pick Up Time: ${contract.pickupTime ?? "-"} | Return Time: ${
         contract.deliveryTime ?? "-"
       }`,
       col2X,
@@ -364,15 +361,19 @@ export async function buildContractHtml({
     rightY += 12;
   }
 
-  if (contract.pickupPlace) {
-    doc.text(`Delivery Place: ${contract.pickupPlace}`, col2X, rightY);
-    rightY += 12;
-  }
+  doc.text(
+    `Pick Up Place: ${contract.pickupPlace?.trim() ? contract.pickupPlace : "-"}`,
+    col2X,
+    rightY
+  );
+  rightY += 12;
 
-  if (contract.deliveryPlace) {
-    doc.text(`Recovery Place: ${contract.deliveryPlace}`, col2X, rightY);
-    rightY += 12;
-  }
+  doc.text(
+    `Return Place: ${contract.deliveryPlace?.trim() ? contract.deliveryPlace : "-"}`,
+    col2X,
+    rightY
+  );
+  rightY += 12;
 
   if (contract.fuelAmount != null) {
     doc.text(`Fuel level (bars): ${contract.fuelAmount}`, col2X, rightY);
@@ -435,13 +436,39 @@ export async function buildContractHtml({
   doc.text(
     `Payment mode: ${contract.paymentMode ?? "-"} | Total paid: ${formatMoney(
       contract.total
-    )} | Notes: ${notesSnippet}`,
+    )}`,
     col1X,
     y
   );
 
+  // ---------- NOTES ----------
+  if (notesText) {
+    y += 24;
+    if (y > PAGE_HEIGHT - 120) {
+      doc.addPage();
+      y = TOP_MARGIN + 20;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("Notes", col1X, y);
+    y += 14;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const noteLines = doc.splitTextToSize(notesText, CONTENT_WIDTH);
+    noteLines.forEach((line: string) => {
+      if (y > PAGE_HEIGHT - BOTTOM_MARGIN) {
+        doc.addPage();
+        y = TOP_MARGIN;
+      }
+      doc.text(line, col1X, y);
+      y += 12;
+    });
+  }
+
   // ---------- SIGNATURES (ONLY CUSTOMER) ----------
-  y += 40;
+  y += 28;
   if (y > PAGE_HEIGHT - 120) {
     doc.addPage();
     y = TOP_MARGIN + 40;

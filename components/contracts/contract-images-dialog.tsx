@@ -1,7 +1,6 @@
-// src/components/contracts/contract-images-dialog.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import type { ContractImage } from "@/lib/types";
-import { getContractImages } from "@/lib/services/contractImagesSite";
+import {
+  addContractImages,
+  getContractImages,
+} from "@/lib/services/contractImagesSite";
+import { fileToBase64 } from "@/lib/utils/fileToBase64";
+import { Upload } from "lucide-react";
+
+const MAX_IMAGES = 4;
 
 type Props = {
   open: boolean;
@@ -23,50 +29,163 @@ type Props = {
 
 export function ContractImagesDialog({ open, contractId, onClose }: Props) {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [images, setImages] = useState<ContractImage[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // 🆕 preview state
+  const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<ContractImage | null>(null);
+
+  const remainingSlots = MAX_IMAGES - images.length;
+  const atMax = images.length >= MAX_IMAGES;
+
+  const loadImages = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getContractImages(contractId);
+      setImages(data);
+    } catch (err: unknown) {
+      toast({
+        title: "Failed to load images",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [contractId, toast]);
 
   useEffect(() => {
     if (!open) return;
-    (async () => {
-      setLoading(true);
-      try {
-        const data = await getContractImages(contractId);
-        setImages(data);
-      } catch (err: any) {
-        toast({
-          title: "Failed to load images",
-          description: err?.message ?? "Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [open, contractId, toast]);
+    void loadImages();
+  }, [open, loadImages]);
+
+  const handleUploadClick = () => {
+    if (atMax) {
+      toast({
+        title: "Maximum reached",
+        description: `You can attach up to ${MAX_IMAGES} images per contract.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+
+    if (files.length === 0) return;
+
+    if (atMax) {
+      toast({
+        title: "Maximum reached",
+        description: `You can attach up to ${MAX_IMAGES} images per contract.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+    if (imageFiles.length === 0) {
+      toast({
+        title: "Invalid files",
+        description: "Please select image files only.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const allowedCount = Math.min(imageFiles.length, remainingSlots);
+    const filesToUpload = imageFiles.slice(0, allowedCount);
+
+    if (imageFiles.length > remainingSlots) {
+      toast({
+        title: "Upload limit",
+        description: `Only ${remainingSlots} more image(s) can be added (maximum ${MAX_IMAGES} per contract).`,
+      });
+    }
+
+    setUploading(true);
+    try {
+      const payload = await Promise.all(
+        filesToUpload.map(async (file) => ({
+          imageBase64: await fileToBase64(file),
+        }))
+      );
+
+      const saved = await addContractImages({
+        contractId,
+        images: payload,
+      });
+
+      setImages((prev) => [...prev, ...saved]);
+      toast({
+        title: "Images saved",
+        description:
+          saved.length === 1
+            ? "1 image attached to this contract."
+            : `${saved.length} images attached to this contract.`,
+      });
+    } catch (err: unknown) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <>
-      {/* Main gallery dialog */}
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent
-          className="w-[96vw] max-w-5xl"
-          showCloseButton={false} // ✅ no "X" here, we use footer Close
-        >
+        <DialogContent className="w-[96vw] max-w-5xl" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Contract Images</DialogTitle>
+            <DialogTitle>Show/Attach Images</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                {atMax
+                  ? `Maximum of ${MAX_IMAGES} images reached for this contract.`
+                  : `${images.length} of ${MAX_IMAGES} images attached. You can add ${remainingSlots} more.`}
+              </p>
+
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  disabled={atMax || uploading}
+                  onChange={handleFilesSelected}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleUploadClick}
+                  disabled={atMax || uploading || loading}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {uploading
+                    ? "Uploading…"
+                    : atMax
+                      ? `Max ${MAX_IMAGES} images`
+                      : "Upload images"}
+                </Button>
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {loading ? (
                 <div className="text-sm text-muted-foreground">Loading…</div>
               ) : images.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
-                  No images available for this contract.
+                  No images yet. Upload up to {MAX_IMAGES} images for this contract.
                 </div>
               ) : (
                 images.map((img) => (
@@ -104,7 +223,6 @@ export function ContractImagesDialog({ open, contractId, onClose }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Image preview dialog */}
       <Dialog
         open={!!previewImage}
         onOpenChange={(isOpen) => {

@@ -48,6 +48,7 @@ import Swal from "sweetalert2";
 
 type ContractsTableProps = {
   contracts: Contract[];
+  customerNamesById?: Map<string, string>;
   onEdit: (contract: Contract) => void;
   onDelete: (contract: Contract) => void | Promise<void>;
   onRefresh?: () => void | Promise<void>;
@@ -84,6 +85,7 @@ function contractSyncKey(list: Contract[]) {
 
 export function ContractsTable({
   contracts,
+  customerNamesById,
   onEdit,
   onDelete,
   onRefresh,
@@ -102,6 +104,25 @@ export function ContractsTable({
   const syncKey = useMemo(() => contractSyncKey(contracts), [contracts]);
   const contractsRef = useRef(contracts);
   contractsRef.current = contracts;
+  const customerNamesRef = useRef(customerNamesById);
+  customerNamesRef.current = customerNamesById;
+  const carCacheRef = useRef(
+    new Map<string, Pick<Enriched, "carName" | "carPlateNumber">>()
+  );
+
+  const buildRow = (
+    contract: Contract,
+    carCache = carCacheRef.current
+  ): Enriched => {
+    const cachedCar = carCache.get(contract.id);
+    return {
+      ...contract,
+      customerName:
+        customerNamesRef.current?.get(contract.customerId) ?? "Unknown",
+      carName: cachedCar?.carName ?? "No car",
+      carPlateNumber: cachedCar?.carPlateNumber ?? "",
+    };
+  };
 
   // Pagination calculations
   const total = rows.length;
@@ -124,90 +145,45 @@ export function ContractsTable({
 
   useEffect(() => {
     const list = contractsRef.current;
-    setRows((prev) => {
-      const prevById = new Map(prev.map((r) => [r.id, r]));
-      const next = list.map((c) => {
-        const old = prevById.get(c.id);
-        return {
-          ...c,
-          customerName: old?.customerName,
-          carName: old?.carName,
-          carPlateNumber: old?.carPlateNumber,
-        } as Enriched;
-      });
-      if (
-        next.length === prev.length &&
-        next.every((row, i) => {
-          const old = prev[i];
-          return (
-            old &&
-            old.id === row.id &&
-            old.status === row.status &&
-            old.total === row.total &&
-            old.days === row.days &&
-            old.startDate === row.startDate &&
-            old.endDate === row.endDate &&
-            old.customerId === row.customerId &&
-            old.carId === row.carId &&
-            old.contractNumber === row.contractNumber &&
-            old.updatedAt === row.updatedAt
-          );
-        })
-      ) {
-        return prev;
-      }
-      return next;
-    });
-  }, [syncKey]);
+    setRows(list.map((contract) => buildRow(contract)));
+  }, [syncKey, customerNamesById]);
 
   useEffect(() => {
     const list = contractsRef.current;
     let cancelled = false;
+
+    const missingCarIds = list.filter(
+      (contract) => !carCacheRef.current.has(contract.id)
+    );
+    if (missingCarIds.length === 0) return;
+
     (async () => {
       setLoading(true);
       try {
-        const enriched = await Promise.all(
-          list.map(async (contract) => {
+        await Promise.all(
+          missingCarIds.map(async (contract) => {
             try {
-              const [customer, car] = await Promise.all([
-                getCustomerById(contract.customerId),
-                getCarById(contract.carId),
-              ]);
-
-              return {
-                ...contract,
-                customerName: customer
-                  ? `${customer.firstName} ${customer.lastName}`
-                  : "Unknown",
+              const car = await getCarById(contract.carId);
+              carCacheRef.current.set(contract.id, {
                 carName: car?.name ?? "No car",
                 carPlateNumber: car?.plateNumber ?? "",
-              } as Enriched;
+              });
             } catch {
-              return {
-                ...contract,
-                customerName: "Unknown",
+              carCacheRef.current.set(contract.id, {
                 carName: "No car",
                 carPlateNumber: "",
-              } as Enriched;
+              });
             }
           })
         );
-        if (!cancelled) setRows(enriched);
-      } catch {
         if (!cancelled) {
-          setRows(
-            list.map((c) => ({
-              ...c,
-              customerName: "Unknown",
-              carName: "No car",
-              carPlateNumber: "",
-            }))
-          );
+          setRows(list.map((contract) => buildRow(contract)));
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
+
     return () => {
       cancelled = true;
     };
@@ -404,7 +380,7 @@ export function ContractsTable({
                           onClick={() => openImages(contract.id)}
                         >
                           <Images className="mr-2 h-4 w-4" />
-                          Show Images
+                          Show/Attach Image
                         </DropdownMenuItem>
 
                         <DropdownMenuItem onClick={() => onEdit(contract)}>

@@ -5,16 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { getContracts } from "@/lib/services/contracts";
 import type { Contract } from "@/lib/types";
+import {
+  buildMonthlyRevenueForYear,
+  countYearRevenueContracts,
+  sumYearRevenueFromContracts,
+} from "@/lib/utils/revenue-by-month";
 
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
-
-function contractBasisDate(c: Contract): Date {
-  return new Date(c.createdAt ?? c.startDate);
-}
-
-function isInCalendarYear(d: Date, year: number): boolean {
-  return d.getFullYear() === year;
-}
 
 export function RevenueReport() {
   const reportYear = new Date().getFullYear();
@@ -26,16 +23,7 @@ export function RevenueReport() {
       setLoading(true);
       try {
         const allContracts: Contract[] = await getContracts();
-
-        const filtered = allContracts.filter((c) => {
-          const basis = contractBasisDate(c);
-          return (
-            isInCalendarYear(basis, reportYear) &&
-            (c.status === "active" || c.status === "completed")
-          );
-        });
-
-        setContracts(filtered);
+        setContracts(allContracts);
       } finally {
         setLoading(false);
       }
@@ -43,13 +31,14 @@ export function RevenueReport() {
   }, [reportYear]);
 
   const chartData = useMemo(() => {
-    const totals = new Array(12).fill(0) as number[];
-    for (const c of contracts) {
-      const m = contractBasisDate(c).getMonth();
-      totals[m] += c.total ?? 0;
-    }
-    return MONTH_SHORT.map((month, i) => ({ month, revenue: totals[i] }));
-  }, [contracts]);
+    const totals = buildMonthlyRevenueForYear(contracts, reportYear);
+    return MONTH_SHORT.map((month, i) => ({
+      month,
+      revenue: Math.round((totals[i] ?? 0) * 100) / 100,
+    }));
+  }, [contracts, reportYear]);
+
+  const hasRevenue = chartData.some((row) => row.revenue > 0);
 
   return (
     <div className="space-y-4">
@@ -57,14 +46,14 @@ export function RevenueReport() {
         <CardHeader>
           <CardTitle>Monthly revenue ({reportYear})</CardTitle>
           <CardDescription>
-            Revenue by calendar month for {reportYear} (active and completed contracts only), based on contract
-            creation date (or start date if creation date is missing).
+            Revenue for {reportYear} (active and completed contracts only), spread across rental days by
+            calendar month.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex h-[300px] items-center justify-center text-muted-foreground">Loading…</div>
-          ) : contracts.length === 0 ? (
+          ) : !hasRevenue ? (
             <div className="flex h-[300px] items-center justify-center text-muted-foreground">
               No revenue data for {reportYear} yet
             </div>

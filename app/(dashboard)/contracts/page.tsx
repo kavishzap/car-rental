@@ -1,17 +1,19 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { getContracts, deleteContract } from "@/lib/services/contracts"
-import type { Contract } from "@/lib/types"
+import { getCustomers } from "@/lib/services/customers"
+import type { Contract, Customer } from "@/lib/types"
 import { ContractsTable } from "@/components/contracts/contracts-table"
 import { ContractDialog } from "@/components/contracts/contract-dialog"
 import { useToast } from "@/hooks/use-toast"
 
 export default function ContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingContract, setEditingContract] = useState<Contract | null>(null)
@@ -21,8 +23,12 @@ export default function ContractsPage() {
   const loadContracts = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getContracts() // ⬅️ await the async service
+      const [data, customersList] = await Promise.all([
+        getContracts(),
+        getCustomers(),
+      ])
       setContracts(data)
+      setCustomers(customersList)
     } catch (err: any) {
       toast({
         title: "Failed to load contracts",
@@ -40,8 +46,29 @@ export default function ContractsPage() {
 
   const handleSearch = (query: string) => setSearchQuery(query)
 
-  const filteredContracts = contracts.filter((c) =>
-    c.contractNumber?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredContracts = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim()
+    if (!q) return contracts
+
+    const customerNameById = new Map(
+      customers.map((c) => [c.id, `${c.firstName} ${c.lastName}`.toLowerCase()])
+    )
+
+    return contracts.filter((c) => {
+      const customerName = customerNameById.get(c.customerId) ?? ""
+      return (
+        c.contractNumber?.toLowerCase().includes(q) ||
+        customerName.includes(q)
+      )
+    })
+  }, [contracts, customers, searchQuery])
+
+  const customerNamesById = useMemo(
+    () =>
+      new Map(
+        customers.map((c) => [c.id, `${c.firstName} ${c.lastName}`.trim()])
+      ),
+    [customers]
   )
 
   const handleAddContract = () => {
@@ -96,6 +123,7 @@ export default function ContractsPage() {
       <PageHeader
         title="Contracts"
         showSearch
+        searchPlaceholder="Search by contract # or customer..."
         onSearch={handleSearch}
         actions={
           <Button onClick={handleAddContract}>
@@ -107,6 +135,7 @@ export default function ContractsPage() {
 
       <ContractsTable
         contracts={filteredContracts}
+        customerNamesById={customerNamesById}
         onEdit={handleEditContract}
         onDelete={handleDeleteContract}
         onRefresh={loadContracts}

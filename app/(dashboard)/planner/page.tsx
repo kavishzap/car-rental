@@ -407,19 +407,19 @@ export default function ContractsPlannerPage() {
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground font-medium">Delivery Place</span>
+                  <span className="text-xs text-muted-foreground font-medium">Pick Up Place</span>
                   <span className="text-sm">{selectedContract?.pickupPlace ?? "-"}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground font-medium">Delivery Time</span>
+                  <span className="text-xs text-muted-foreground font-medium">Pick Up Time</span>
                   <span className="text-sm">{selectedContract?.pickupTime ?? "-"}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground font-medium">Recovery Place</span>
+                  <span className="text-xs text-muted-foreground font-medium">Return Place</span>
                   <span className="text-sm">{selectedContract?.deliveryPlace ?? "-"}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground font-medium">Recovery Time</span>
+                  <span className="text-xs text-muted-foreground font-medium">Return Time</span>
                   <span className="text-sm">{selectedContract?.deliveryTime ?? "-"}</span>
                 </div>
               </div>
