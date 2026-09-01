@@ -35,11 +35,17 @@ type Car = {
   model?: string | null;
 };
 
+type ContractPhoto = {
+  imageBase64: string;
+  caption?: string;
+};
+
 type BuildContractHtmlArgs = {
   contract: Contract;
   customer: Customer;
   car: Car;
   company: CompanyDetails;
+  images?: ContractPhoto[];
 };
 
 const normalizeImageDataUrl = (raw?: string | null): string | undefined => {
@@ -51,11 +57,31 @@ const normalizeImageDataUrl = (raw?: string | null): string | undefined => {
   return `data:${mime};base64,${cleaned}`;
 };
 
+function getPdfImageType(dataUrl: string): "JPEG" | "PNG" {
+  const value = dataUrl.slice(0, 32).toLowerCase();
+  if (value.includes("image/png")) return "PNG";
+  return "JPEG";
+}
+
+function fitContain(
+  srcW: number,
+  srcH: number,
+  boxW: number,
+  boxH: number
+): { width: number; height: number } {
+  const ratio = Math.min(boxW / srcW, boxH / srcH);
+  return {
+    width: Math.max(1, srcW * ratio),
+    height: Math.max(1, srcH * ratio),
+  };
+}
+
 export async function buildContractHtml({
   contract,
   customer,
   car,
   company,
+  images = [],
 }: BuildContractHtmlArgs) {
   const doc = new jsPDF("p", "pt", "a4");
 
@@ -544,6 +570,127 @@ export async function buildContractHtml({
 
   // PRINT ALL LINES SAFELY
   wrappedLines.forEach(printLine);
+
+  // ---------- VEHICLE CONDITION PHOTOGRAPHS (LAST PAGE) ----------
+  const photos = images
+    .map((img) => ({
+      dataUrl: normalizeImageDataUrl(img.imageBase64),
+      caption: img.caption?.trim() ?? "",
+    }))
+    .filter((img): img is { dataUrl: string; caption: string } => Boolean(img.dataUrl));
+
+  if (photos.length > 0) {
+    doc.addPage();
+
+    const PHOTO_FOOTER_GUARD = 95;
+    let photoY = TOP_MARGIN;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text("ANNEX — Vehicle Condition Photographs", MARGIN_LEFT, photoY);
+
+    photoY += 16;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(90);
+    doc.text(
+      `Contract No: ${contract.contractNumber || contract.id}    •    ${photos.length} photograph${
+        photos.length === 1 ? "" : "s"
+      } attached`,
+      MARGIN_LEFT,
+      photoY
+    );
+
+    photoY += 12;
+    const disclaimerLines = doc.splitTextToSize(
+      "These photographs form part of this rental contract and record the vehicle condition at the time they were attached.",
+      CONTENT_WIDTH
+    );
+    disclaimerLines.forEach((line: string) => {
+      doc.text(line, MARGIN_LEFT, photoY);
+      photoY += 11;
+    });
+    doc.setTextColor(0);
+
+    photoY += 6;
+    doc.setLineWidth(0.6);
+    doc.setDrawColor(200);
+    doc.line(MARGIN_LEFT, photoY, PAGE_WIDTH - MARGIN_RIGHT, photoY);
+    photoY += 16;
+
+    const cols = photos.length === 1 ? 1 : 2;
+    const rows = Math.ceil(photos.length / cols);
+    const gutter = 14;
+    const availableH = PAGE_HEIGHT - photoY - PHOTO_FOOTER_GUARD;
+    const cellW =
+      cols === 1
+        ? Math.min(CONTENT_WIDTH, 420)
+        : (CONTENT_WIDTH - gutter) / 2;
+    const cellH = Math.min(
+      (availableH - gutter * (rows - 1)) / rows,
+      photos.length === 1 ? 480 : 290
+    );
+    const gridWidth = cols === 1 ? cellW : cellW * 2 + gutter;
+    const gridStartX = MARGIN_LEFT + (CONTENT_WIDTH - gridWidth) / 2;
+
+    photos.forEach((photo, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const x = gridStartX + col * (cellW + gutter);
+      const y = photoY + row * (cellH + gutter);
+
+      doc.setFillColor(250, 250, 250);
+      doc.setDrawColor(205);
+      doc.setLineWidth(0.7);
+      doc.roundedRect(x, y, cellW, cellH, 3, 3, "FD");
+
+      const pad = 10;
+      const captionSpace = 22;
+      const innerX = x + pad;
+      const innerY = y + pad;
+      const innerW = cellW - pad * 2;
+      const innerH = cellH - pad * 2 - captionSpace;
+
+      doc.setFillColor(236, 236, 236);
+      doc.rect(innerX, innerY, innerW, innerH, "F");
+
+      try {
+        const props = doc.getImageProperties(photo.dataUrl);
+        const fitted = fitContain(props.width, props.height, innerW, innerH);
+        const imgX = innerX + (innerW - fitted.width) / 2;
+        const imgY = innerY + (innerH - fitted.height) / 2;
+        doc.addImage(
+          photo.dataUrl,
+          getPdfImageType(photo.dataUrl),
+          imgX,
+          imgY,
+          fitted.width,
+          fitted.height
+        );
+      } catch {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(9);
+        doc.setTextColor(130);
+        doc.text(
+          "Image unavailable",
+          innerX + innerW / 2,
+          innerY + innerH / 2,
+          { align: "center" }
+        );
+        doc.setTextColor(0);
+      }
+
+      const label =
+        photo.caption ||
+        `Photograph ${String(index + 1).padStart(2, "0")}`;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(70);
+      const captionLine = doc.splitTextToSize(label, cellW - 16)[0] as string;
+      doc.text(captionLine, x + cellW / 2, y + cellH - 8, { align: "center" });
+      doc.setTextColor(0);
+    });
+  }
 
   // ---------- ADD FOOTER TO ALL PAGES ----------
   const totalPages = doc.getNumberOfPages();

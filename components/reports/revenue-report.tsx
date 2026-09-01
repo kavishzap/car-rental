@@ -6,15 +6,15 @@ import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import { getContracts } from "@/lib/services/contracts";
 import type { Contract } from "@/lib/types";
 import {
+  FISCAL_MONTH_SHORT,
   buildMonthlyRevenueForYear,
-  countYearRevenueContracts,
-  sumYearRevenueFromContracts,
+  formatFiscalYearRange,
+  getFiscalYearStartYear,
 } from "@/lib/utils/revenue-by-month";
 
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
-
 export function RevenueReport() {
-  const reportYear = new Date().getFullYear();
+  const fiscalStartYear = getFiscalYearStartYear();
+  const fiscalRangeLabel = formatFiscalYearRange(fiscalStartYear);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -28,15 +28,15 @@ export function RevenueReport() {
         setLoading(false);
       }
     })();
-  }, [reportYear]);
+  }, [fiscalStartYear]);
 
   const chartData = useMemo(() => {
-    const totals = buildMonthlyRevenueForYear(contracts, reportYear);
-    return MONTH_SHORT.map((month, i) => ({
+    const totals = buildMonthlyRevenueForYear(contracts, fiscalStartYear);
+    return FISCAL_MONTH_SHORT.map((month, i) => ({
       month,
       revenue: Math.round((totals[i] ?? 0) * 100) / 100,
     }));
-  }, [contracts, reportYear]);
+  }, [contracts, fiscalStartYear]);
 
   const hasRevenue = chartData.some((row) => row.revenue > 0);
 
@@ -44,10 +44,10 @@ export function RevenueReport() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Monthly revenue ({reportYear})</CardTitle>
+          <CardTitle>Monthly revenue ({fiscalRangeLabel})</CardTitle>
           <CardDescription>
-            Revenue for {reportYear} (active and completed contracts only), spread across rental days by
-            calendar month.
+            Revenue for {fiscalRangeLabel} (active and completed contracts only), spread across rental
+            days by calendar month.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -55,7 +55,7 @@ export function RevenueReport() {
             <div className="flex h-[300px] items-center justify-center text-muted-foreground">Loading…</div>
           ) : !hasRevenue ? (
             <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-              No revenue data for {reportYear} yet
+              No revenue data for {fiscalRangeLabel} yet
             </div>
           ) : (
             <RevenueChart data={chartData} />

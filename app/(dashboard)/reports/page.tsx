@@ -14,6 +14,8 @@ import { CarsReport } from "@/components/reports/cars-report";
 import type { Contract, Customer, Car, VehicleRegister } from "@/lib/types";
 import {
   countYearRevenueContracts,
+  formatFiscalYearRange,
+  getFiscalYearStartYear,
   sumYearRevenueFromContracts,
 } from "@/lib/utils/revenue-by-month";
 import { AlertTriangle } from "lucide-react";
@@ -42,12 +44,12 @@ export default function ReportsPage() {
           getVehicleRegisters(),
         ]);
 
-        const reportYear = new Date().getFullYear();
+        const fiscalStartYear = getFiscalYearStartYear();
 
-        const totalRevenue = sumYearRevenueFromContracts(contracts, reportYear);
+        const totalRevenue = sumYearRevenueFromContracts(contracts, fiscalStartYear);
 
         const totalContracts = contracts.length; // Total in DB, irrespective of status or date
-        const ytdRevenueContractCount = countYearRevenueContracts(contracts, reportYear);
+        const ytdRevenueContractCount = countYearRevenueContracts(contracts, fiscalStartYear);
         const averageContractValue =
           ytdRevenueContractCount > 0 ? totalRevenue / ytdRevenueContractCount : 0;
 
@@ -100,7 +102,7 @@ export default function ReportsPage() {
     })();
   }, []);
 
-  const reportYear = new Date().getFullYear();
+  const fiscalRangeLabel = formatFiscalYearRange(getFiscalYearStartYear());
 
   return (
    <div className="flex flex-col gap-6">
@@ -113,7 +115,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
-            <p className="text-xs text-muted-foreground pt-1">Year to date {reportYear}</p>
+            <p className="text-xs text-muted-foreground pt-1">Year to date {fiscalRangeLabel}</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -134,7 +136,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Avg Contract Value</CardTitle>
-            <p className="text-xs text-muted-foreground pt-1">Among {reportYear} revenue contracts</p>
+            <p className="text-xs text-muted-foreground pt-1">Among {fiscalRangeLabel} revenue contracts</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

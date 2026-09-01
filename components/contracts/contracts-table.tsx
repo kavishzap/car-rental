@@ -40,6 +40,7 @@ import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { getCustomerById } from "@/lib/services/customers";
 import { getCarById } from "@/lib/services/cars";
 import { getCompanyDetails } from "@/lib/services/company"; // 👈 NEW
+import { getContractImages } from "@/lib/services/contractImagesSite";
 import { buildContractHtml } from "@/lib/utils/pdf-generator"; // 👈 now used
 import type { Contract } from "@/lib/types";
 import { ContractImagesDialog } from "@/components/contracts/contract-images-dialog";
@@ -190,10 +191,11 @@ export function ContractsTable({
   }, [syncKey]);
 
   const handleDownloadPDF = async (contract: Contract) => {
-    const [customer, car, company] = await Promise.all([
+    const [customer, car, company, images] = await Promise.all([
       getCustomerById(contract.customerId),
       getCarById(contract.carId),
       getCompanyDetails(), // 👈 pulls the single row you showed
+      getContractImages(contract.id).catch(() => []),
     ]);
 
     if (!customer || !company) {
@@ -219,6 +221,7 @@ export function ContractsTable({
       customer,
       car,
       company,
+      images,
     });
   };
 

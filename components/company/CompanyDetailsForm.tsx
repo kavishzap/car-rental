@@ -13,6 +13,7 @@ import {
   createCompanyDetails,
 } from "@/lib/services/company";
 import { ImageIcon, Upload, Trash2 } from "lucide-react";
+import { fileToBase64 } from "@/lib/utils/fileToBase64";
 
 export function CompanyDetailsForm() {
   const { toast } = useToast();
@@ -57,19 +58,25 @@ export function CompanyDetailsForm() {
     load();
   }, []);
 
-  const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      // This will be a data URL: data:image/png;base64,...
-      setForm((prev) => ({
-        ...prev,
-        logo: reader.result as string,
-      }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const logo = await fileToBase64(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        maxBytes: 200_000,
+      });
+      setForm((prev) => ({ ...prev, logo }));
+    } catch (err: unknown) {
+      toast({
+        title: "Logo upload failed",
+        description: err instanceof Error ? err.message : "Please try a smaller image.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleClearLogo = () => {
@@ -165,7 +172,7 @@ export function CompanyDetailsForm() {
                   Upload Logo
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  PNG / JPG, max ~2MB
+                  PNG / JPG — compressed automatically
                 </span>
               </div>
 
