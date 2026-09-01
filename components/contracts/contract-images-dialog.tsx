@@ -14,10 +14,11 @@ import { useToast } from "@/hooks/use-toast";
 import type { ContractImage } from "@/lib/types";
 import {
   addContractImages,
+  deleteContractImage,
   getContractImages,
 } from "@/lib/services/contractImagesSite";
 import { fileToBase64 } from "@/lib/utils/fileToBase64";
-import { Upload } from "lucide-react";
+import { Trash2, Upload } from "lucide-react";
 
 const MAX_IMAGES = 4;
 
@@ -34,6 +35,8 @@ export function ContractImagesDialog({ open, contractId, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<ContractImage | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ContractImage | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const remainingSlots = MAX_IMAGES - images.length;
   const atMax = images.length >= MAX_IMAGES;
@@ -55,7 +58,11 @@ export function ContractImagesDialog({ open, contractId, onClose }: Props) {
   }, [contractId, toast]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setPendingDelete(null);
+      setPreviewImage(null);
+      return;
+    }
     void loadImages();
   }, [open, loadImages]);
 
@@ -138,6 +145,28 @@ export function ContractImagesDialog({ open, contractId, onClose }: Props) {
     }
   };
 
+  const handleDelete = async (img: ContractImage) => {
+    setDeletingId(img.id);
+    try {
+      await deleteContractImage(img.id);
+      setImages((prev) => prev.filter((item) => item.id !== img.id));
+      setPendingDelete((current) => (current?.id === img.id ? null : current));
+      if (previewImage?.id === img.id) setPreviewImage(null);
+      toast({
+        title: "Image deleted",
+        description: "The photograph has been removed from this contract.",
+      });
+    } catch (err: unknown) {
+      toast({
+        title: "Delete failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onClose}>
@@ -189,18 +218,22 @@ export function ContractImagesDialog({ open, contractId, onClose }: Props) {
                 </div>
               ) : (
                 images.map((img) => (
-                  <button
+                  <div
                     key={img.id}
-                    type="button"
-                    onClick={() => setPreviewImage(img)}
-                    className="rounded border p-3 space-y-2 bg-muted/20 text-left hover:bg-muted/40 transition"
+                    className="rounded border p-3 space-y-2 bg-muted/20"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img.imageBase64}
-                      alt={img.caption || "Contract image"}
-                      className="h-48 w-full object-contain bg-white rounded border"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewImage(img)}
+                      className="w-full text-left hover:opacity-90 transition"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.imageBase64}
+                        alt={img.caption || "Contract image"}
+                        className="h-48 w-full object-contain bg-white rounded border"
+                      />
+                    </button>
                     {img.caption && (
                       <Textarea
                         value={img.caption}
@@ -209,7 +242,49 @@ export function ContractImagesDialog({ open, contractId, onClose }: Props) {
                         className="resize-none bg-muted/40 cursor-default"
                       />
                     )}
-                  </button>
+                    {pendingDelete?.id === img.id ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">
+                          Delete this photograph? This cannot be undone.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            disabled={deletingId === img.id}
+                            onClick={() => setPendingDelete(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="flex-1"
+                            disabled={deletingId === img.id}
+                            onClick={() => void handleDelete(img)}
+                          >
+                            <Trash2 className="mr-1 h-4 w-4" />
+                            {deletingId === img.id ? "Deleting…" : "Delete"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-destructive hover:text-destructive"
+                        disabled={!!deletingId || uploading}
+                        onClick={() => setPendingDelete(img)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
                 ))
               )}
             </div>
@@ -253,10 +328,51 @@ export function ContractImagesDialog({ open, contractId, onClose }: Props) {
             </div>
           )}
 
-          <DialogFooter>
-            <Button type="button" onClick={() => setPreviewImage(null)}>
-              Close
-            </Button>
+          <DialogFooter className="gap-2 sm:justify-between">
+            {previewImage && (
+              pendingDelete?.id === previewImage.id ? (
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Delete this photograph? This cannot be undone.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={deletingId === previewImage.id}
+                      onClick={() => setPendingDelete(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={deletingId === previewImage.id}
+                      onClick={() => void handleDelete(previewImage)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {deletingId === previewImage.id ? "Deleting…" : "Delete"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    disabled={!!deletingId}
+                    onClick={() => setPendingDelete(previewImage)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                  <Button type="button" onClick={() => setPreviewImage(null)}>
+                    Close
+                  </Button>
+                </>
+              )
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
