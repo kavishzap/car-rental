@@ -117,16 +117,23 @@ export function sumYearRevenueFromContracts(
   );
 }
 
+/** Any contract whose rental dates overlap the fiscal year, any status. */
+export function contractOverlapsFiscalYear(contract: Contract, startYear: number): boolean {
+  if (!contract.startDate || !contract.endDate) return false;
+  const start = parseDateOnly(contract.startDate);
+  const end = parseDateOnly(contract.endDate);
+  return rentalOverlapsFiscalYear(start, end, startYear);
+}
+
+export function countFiscalYearContracts(contracts: Contract[], startYear: number): number {
+  return contracts.filter((c) => contractOverlapsFiscalYear(c, startYear)).length;
+}
+
 export function countYearRevenueContracts(
   contracts: Contract[],
   startYear: number
 ): number {
-  return contracts.filter((c) => {
-    if (!REVENUE_STATUSES.has(c.status) || !c.startDate || !c.endDate) {
-      return false;
-    }
-    const start = parseDateOnly(c.startDate);
-    const end = parseDateOnly(c.endDate);
-    return rentalOverlapsFiscalYear(start, end, startYear);
-  }).length;
+  return contracts.filter(
+    (c) => REVENUE_STATUSES.has(c.status) && contractOverlapsFiscalYear(c, startYear)
+  ).length;
 }

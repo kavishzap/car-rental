@@ -13,6 +13,7 @@ import { RevenueReport } from "@/components/reports/revenue-report";
 import { CarsReport } from "@/components/reports/cars-report";
 import type { Contract, Customer, Car, VehicleRegister } from "@/lib/types";
 import {
+  countFiscalYearContracts,
   countYearRevenueContracts,
   formatFiscalYearRange,
   getFiscalYearStartYear,
@@ -48,7 +49,7 @@ export default function ReportsPage() {
 
         const totalRevenue = sumYearRevenueFromContracts(contracts, fiscalStartYear);
 
-        const totalContracts = contracts.length; // Total in DB, irrespective of status or date
+        const totalContracts = countFiscalYearContracts(contracts, fiscalStartYear);
         const ytdRevenueContractCount = countYearRevenueContracts(contracts, fiscalStartYear);
         const averageContractValue =
           ytdRevenueContractCount > 0 ? totalRevenue / ytdRevenueContractCount : 0;
@@ -127,6 +128,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Contracts</CardTitle>
+            <p className="text-xs text-muted-foreground pt-1">Year to date {fiscalRangeLabel}</p>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{loading ? "…" : reportData.totalContracts}</div>
